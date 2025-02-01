@@ -163,7 +163,7 @@ class PolicyModel(nn.Module):
     def is_vllm_server_running(self):
         return self.vllm_process is not None
 
-    def sync_gen_model(self):
+    def save_policy_model(self):
         policy_state = self.policy_model.state_dict()
         torch.save(policy_state, self.model_path)
 

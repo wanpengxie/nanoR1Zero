@@ -51,12 +51,14 @@ if __name__ == "__main__":
     params = list(policy_model.parameters())
     opt = torch.optim.AdamW(params, lr=lr)
 
-    collector = GRPOCollector(buffer, kl_coe, gamma, gae_lambda, eos_token=tokenizer.eos_token_id)
+    collector = GRPOCollector(buffer, kl_coe, eos_token=tokenizer.eos_token_id)
 
     dataset = DataLoader('data/test_data.json', batch_size=2)
 
     sample_step = 0
     train_step = 0
+
+    policy_model.save_policy_model()
 
     for i in range(epoch):
         for prompts in dataset:
@@ -106,5 +108,6 @@ if __name__ == "__main__":
                 opt.step()
                 opt.zero_grad()
             collector.reset()
+            policy_model.save_policy_model()
 
             # cur_rewards = torch.mean(torch.stack([x[-1] for x in episodes])).detach().item()
