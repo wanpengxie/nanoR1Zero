@@ -1,0 +1,32 @@
+[
+{
+    "input": "<|im_start|>system\nPlease reason step by step, and put your final answer within \\boxed{}.<|im_end|>\n<|im_start|>user\nThe vectors $\\mathbf{a} = \\begin{pmatrix} 3 \\\\ 1 \\\\ -2 \\end{pmatrix}$ and $\\mathbf{b} = \\begin{pmatrix} 0 \\\\ 2 \\\\ -1 \\end{pmatrix}.$  There exist scalars $p,$ $q,$ and $r$ such that\n\\[\\begin{pmatrix} 4 \\\\ 1 \\\\ -4 \\end{pmatrix} = p \\mathbf{a} + q \\mathbf{b} + r (\\mathbf{a} \\times \\mathbf{b}).\\]Find $r.$<|im_end|>\n<|im_start|>assistant",
+    "answer": "-\\frac{1}{6}",
+    "gt_answer": "-\\frac{1}{6}",
+    "subject": "Precalculus",
+    "level": 3,
+    "question": "The vectors $\\mathbf{a} = \\begin{pmatrix} 3 \\\\ 1 \\\\ -2 \\end{pmatrix}$ and $\\mathbf{b} = \\begin{pmatrix} 0 \\\\ 2 \\\\ -1 \\end{pmatrix}.$  There exist scalars $p,$ $q,$ and $r$ such that\n\\[\\begin{pmatrix} 4 \\\\ 1 \\\\ -4 \\end{pmatrix} = p \\mathbf{a} + q \\mathbf{b} + r (\\mathbf{a} \\times \\mathbf{b}).\\]Find $r.$",
+    "ground_truth_answer": "-\\frac{1}{6}",
+    "target": "-\\frac{1}{6}"
+},
+{
+    "input": "<|im_start|>system\nPlease reason step by step, and put your final answer within \\boxed{}.<|im_end|>\n<|im_start|>user\nOn the refrigerator, MATHEMATICS is spelled out with $11$ magnets, one letter per magnet. Two vowels and four consonants fall off and are put away in a bag. If the T's, M's, and A's are indistinguishable, how many distinct possible collections of letters could be put in the bag?<|im_end|>\n<|im_start|>assistant",
+    "answer": "72",
+    "gt_answer": "72",
+    "subject": "Counting & Probability",
+    "level": 5,
+    "question": "On the refrigerator, MATHEMATICS is spelled out with $11$ magnets, one letter per magnet. Two vowels and four consonants fall off and are put away in a bag. If the T's, M's, and A's are indistinguishable, how many distinct possible collections of letters could be put in the bag?",
+    "ground_truth_answer": "72",
+    "target": "72"
+},
+{
+    "input": "<|im_start|>system\nPlease reason step by step, and put your final answer within \\boxed{}.<|im_end|>\n<|im_start|>user\nLet $f(x) = 12x+7$ and $g(x) = 5x+2$ whenever $x$ is a positive integer. Define $h(x)$ to be the greatest common divisor of $f(x)$ and $g(x)$. What is the sum of all possible values of $h(x)$?<|im_end|>\n<|im_start|>assistant",
+    "answer": "12",
+    "gt_answer": "12",
+    "subject": "Number Theory",
+    "level": 5,
+    "question": "Let $f(x) = 12x+7$ and $g(x) = 5x+2$ whenever $x$ is a positive integer. Define $h(x)$ to be the greatest common divisor of $f(x)$ and $g(x)$. What is the sum of all possible values of $h(x)$?",
+    "ground_truth_answer": "12",
+    "target": "12"
+}
+]
