@@ -30,7 +30,9 @@ class GRPO(torch.nn.Module):
         # dim: token_ids: (batch, seq_len), label_ids: (batch, seq_len) => with padding -100, 
         # log_gen_probs: (batch, seq_len-1) with padding 0.0, log_ref_probs: (batch, seq_len) with padding 0.0, 
         # rewards: (batch, 1)
-        device = self.policy_model.device
+        device = self.policy_model.policy_model.device
+        if device is None:
+            device = 'cuda'
         token_ids, label_ids, log_gen_probs, log_ref_probs, start_index, rewards = samples
         token_ids = token_ids.to(device)
         label_ids = label_ids.to(device)

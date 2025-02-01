@@ -102,11 +102,11 @@ if __name__ == "__main__":
     # tokenizer.save_pretrained(update_path)
     # policy_model.start_vllm_server()
 
-
+    policy_model.policy_model.gradient_checkpointing_enable()
     for i in range(epoch):
         for prompts in dataset:
             sample_step += 1
-
+            t = time.time()
             print (f'start sample {sample_step}----------------------------')
             policy_model.eval()
             sample_rewards = []
@@ -151,7 +151,7 @@ if __name__ == "__main__":
                                rewards[i])
                     collector.add_buffer([episode])
             
-            print (f'end sample {sample_step}----------------------------')
+            print (f'end sample {sample_step}----------------------------, time: {time.time() - t}')
 
             collector.dump_buffer(f'buffer_{i}.pkl', mode='pickle')
             collector.dump_buffer(f'buffer_{i}.json', mode='json')
@@ -164,6 +164,9 @@ if __name__ == "__main__":
             # 记录采样阶段的指标
             wandb.log({
                 "sample_step": sample_step,
+                "sample_time": time.time() - t,
+                "sample_size": len(collector.episodes),
+                "prompt_size": len(prompts),
                 "average_reward": average_reward,
                 "average_length": average_length,
             })
@@ -172,8 +175,10 @@ if __name__ == "__main__":
             accumulated_loss = 0
             train_samples = 0
             micro_train_samples = 0
+            t = time.time()
+            print (f'start train step {sample_step}----------------------------')
             for batch_idx, samples in enumerate(collector.sample(inner_epoch, batch=micro_batch, device=device)):
-                train_step += micro_batch
+                # train_step += micro_batch
                 samples_num = samples[0].shape[0]
                 micro_train_samples += samples_num
                 print (f'start train batch {batch_idx}, micro samples_num: {micro_train_samples}, train samples_num: {train_samples}')
@@ -184,6 +189,7 @@ if __name__ == "__main__":
                 accumulated_loss += loss.detach().cpu().item() * samples_num
 
                 if micro_train_samples >= train_batch:
+                    train_step += 1
                     train_samples += micro_train_samples
                     print (f'-----accumulated batch {batch_idx}, micro train samples: {micro_train_samples}, train samples: {train_samples}-----')
                     grad_norm = torch.nn.utils.clip_grad_norm_(params, max_grad_norm)
@@ -191,6 +197,8 @@ if __name__ == "__main__":
                     opt.zero_grad()                
                     wandb.log({
                         "train_step": train_step,
+                        "train_samples": train_samples,
+                        "time": time.time() - t,
                         "policy_loss": policy_loss.mean().item(),
                         "entropy_loss": entropy_loss.mean().item(),
                         "total_loss": loss.item(),

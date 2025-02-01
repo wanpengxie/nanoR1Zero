@@ -3,6 +3,7 @@ import torch
 from latex2sympy2_extended import NormalizationConfig
 from math_verify import LatexExtractionConfig, parse, verify
 import re
+
 class BaseReward(torch.nn.Module):
     def __init__(self):
         super().__init__()
