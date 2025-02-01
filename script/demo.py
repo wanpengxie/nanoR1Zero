@@ -18,6 +18,31 @@ import wandb  # 添加wandb导入
 import requests
 import json
 
+def eval_aime24(dataset, reward_model, batch_size=128, tokenizer=None):
+    n = len(dataset)
+    rewards = []
+    for i in range(0, n, batch_size):
+        batch = dataset[i:i+batch_size]
+        prompts = [tokenizer.apply_chat_template(
+            [{"role": "user", "content": x['problem']}], 
+            tokenize=False, 
+            add_generation_prompt=True) 
+            for x in batch]
+        answers = [x['answer'] for x in batch]
+        results = requests.post(
+            f'http://localhost:8000/generate_batch', 
+            json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.01, 'top_p': 1.0}
+        )
+        results = results.json()
+        for i, result in enumerate(results['results']):
+            prompt_text = result['prompt_text']
+            answer_text = result['output_text']
+            gt_answer = answers[i]
+            reward = reward_model.rule_reward(answer_text, gt_answer)
+            rewards.append(reward)
+    print (f'average reward: {np.mean(rewards)}')
+    return np.mean(rewards)
+
 def eval_dataset(dataset, reward_model, batch_size=128):
     n = len(dataset)
     rewards = []
@@ -30,14 +55,14 @@ def eval_dataset(dataset, reward_model, batch_size=128):
             json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.01, 'top_p': 1.0}
         )
         results = results.json()
-        for i, result in enumerate(results):
+        for i, result in enumerate(results['results']):
             prompt_text = result['prompt_text']
             answer_text = result['output_text']
             gt_answer = answers[i]
             reward = reward_model.rule_reward(answer_text, gt_answer)
             rewards.append(reward)
-            print (f'prompt: {prompt_text}-{prompts[i]}, answer: {reward_model.match_box(answer_text)}, gt_answer: {gt_answer}, reward: {reward}')
     print (f'average reward: {np.mean(rewards)}')
+    return np.mean(rewards)
 
 if __name__ == "__main__":
     import sys 
@@ -122,8 +147,11 @@ if __name__ == "__main__":
     # policy_model.save_policy_model()
     # tokenizer.save_pretrained(update_path)
     # policy_model.start_vllm_server()
-    test_dataset = DataLoader('data/math_verify_test.json', batch_size=128)
-    eval_dataset(test_dataset, reward_model)
+    test_dataset = DataLoader('data/aime24_eval.json', batch_size=8)
+    eval_aime24(test_dataset, reward_model, batch_size=8, tokenizer=tokenizer)
+    # eval_dataset(test_dataset, reward_model, batch_size=64)
+
+
     policy_model.policy_model.gradient_checkpointing_enable()
     for i in range(epoch):
         for prompts in dataset:

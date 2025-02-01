@@ -17,3 +17,9 @@ class DataLoader:
         n = len(self.data)
         for i in range(0, n, self.batch_size):
             yield self.data[i:i+self.batch_size]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        return self.data[index]
