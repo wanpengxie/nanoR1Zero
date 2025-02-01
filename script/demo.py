@@ -137,13 +137,14 @@ if __name__ == "__main__":
                         continue
                     else:
                         eos_index = eos_index[0][0].item() + start_index
-                    episode = (prompt_text, response_texts[i], input_ids[i][:eos_index].tolist(), gen_log_probs[i][:eos_index-start_index+1].tolist(), ref_log_probs[i][:eos_index-start_index+1].tolist(), start_index, rewards[i])
+                    episode = (prompt_text, response_texts[i], answer_text, input_ids[i][:eos_index].tolist(), gen_log_probs[i][:eos_index-start_index+1].tolist(), ref_log_probs[i][:eos_index-start_index+1].tolist(), start_index, rewards[i])
                     collector.add_buffer([episode])
             
             print (f'end sample {sample_step}----------------------------')
 
             collector.dump_buffer(f'buffer_{i}.pkl', mode='pickle')
             collector.dump_buffer(f'buffer_{i}.json', mode='json')
+            os._exit(0)
             # average reward
             average_reward = np.mean([x[6] for x in collector.episodes])
             average_length = np.mean([len(x[2]) - x[5] for x in collector.episodes])
