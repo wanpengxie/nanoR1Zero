@@ -109,8 +109,10 @@ class PolicyModel(nn.Module):
     def calc_probs(self, input_ids, start_index, batch_size=16, model='ref'):
         if model == 'ref':
             model = self.ref_model
+            model = model.to('cuda')
         elif model == 'gen':
             model = self.gen_model
+            model = model.to('cuda')
         else:
             raise ValueError(f"Invalid model: {model}")
         input_batch = input_ids.shape[0]
@@ -124,6 +126,12 @@ class PolicyModel(nn.Module):
                     token_probs_all = token_probs
                 else:
                     token_probs_all = torch.cat([token_probs_all, token_probs], dim=0)
+        # 将model移到cpu
+        if model == 'ref':
+            self.ref_model = self.ref_model.cpu()
+        elif model == 'gen':
+            self.gen_model = self.gen_model.cpu()
+        model = model.cpu()
         return token_probs_all
 
     def detect_vllm_server(self):
