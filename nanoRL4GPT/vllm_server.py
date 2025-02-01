@@ -58,8 +58,9 @@ if __name__ == '__main__':
         model=model_path,
         tensor_parallel_size=1,    # GPU数量
         trust_remote_code=True,
-        gpu_memory_utilization=0.5,
+        gpu_memory_utilization=0.45,
         dtype="bfloat16",         # 可选 "float16", "bfloat16", "float32"
     )
+    print ('vllm server finish loading model')
     model['status'] = 'running'
     worker.join()
