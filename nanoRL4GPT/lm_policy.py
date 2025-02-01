@@ -116,6 +116,8 @@ class PolicyModel(nn.Module):
         else:
             raise ValueError(f"Invalid model: {model}")
         input_batch = input_ids.shape[0]
+        token_probs_all = None
+        print (f'input_batch: {input_batch}, batch_size: {batch_size}')
         if input_batch > batch_size:
             for i in range(0, input_batch, batch_size):
                 input_ids_batch = input_ids[i:i+batch_size]
@@ -126,6 +128,13 @@ class PolicyModel(nn.Module):
                     token_probs_all = token_probs
                 else:
                     token_probs_all = torch.cat([token_probs_all, token_probs], dim=0)
+        else:
+            input_ids_batch = input_ids
+            logits = model.forward(input_ids_batch).logits[:, start_index-1:-1, :]
+            probs = torch.nn.Softmax(dim=-1)(logits)
+            token_probs = torch.gather(probs, -1, input_ids_batch[:, start_index:, None]).squeeze(-1).detach().cpu()
+            token_probs_all = token_probs
+            
         # 将model移到cpu
         if model == 'ref':
             self.ref_model = self.ref_model.cpu()
@@ -140,7 +149,8 @@ class PolicyModel(nn.Module):
             response = requests.get('http://localhost:8000/ping')
             print (response.json())
             return response.status_code == 200 and response.json()['status'] == 'ok'
-        except:
+        except Exception as e:
+            print (e)
             return False
     
     def start_vllm_server(self):

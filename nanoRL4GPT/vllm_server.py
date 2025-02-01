@@ -36,6 +36,7 @@ def generate():
 
 @app.route('/ping', methods=['GET'])
 def ping():
+    print ('ping, model status: ', model.get('status', 'loading'))
     if model.get('status', 'loading') == 'running':
         return jsonify({'status': 'ok'})
     else:
