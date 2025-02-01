@@ -57,21 +57,8 @@ if __name__ == "__main__":
     for i in range(epoch):
         for prompts in dataset:
             sample_step += 1
-            if collector.is_full():
-                policy_model.stop_vllm_server()
-                print ("episodes summary info: ", collector.summary())
-                policy_model.train()
-                for samples in collector.sample(inner_epoch, batch=train_batch, device=device):
-                    train_step += 1
-                    policy_loss, entropy_loss = ppo.forward(samples)
-                    loss = policy_loss + entropy_loss * entropy_coe
-                    loss = loss.mean()
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(params, max_grad_norm)
-                    opt.step()
-                    opt.zero_grad()
-                collector.reset()
 
+            print (f'start sample {sample_step}----------------------------')
             policy_model.eval()
             policy_model.start_vllm_server()
             for prompt in prompts:
@@ -101,4 +88,19 @@ if __name__ == "__main__":
                     episode = (prompt_text, response_texts[i], input_ids[i][:eos_index].tolist(), gen_log_probs[i][:eos_index-start_index+1].tolist(), ref_log_probs[i][:eos_index-start_index+1].tolist(), start_index, rewards[i])
                     collector.add_buffer([episode])
             
+            print (f'end sample {sample_step}----------------------------')
+            policy_model.stop_vllm_server()
+            print ("episodes summary info: ", collector.summary())
+            policy_model.train()
+            for samples in collector.sample(inner_epoch, batch=train_batch, device=device):
+                train_step += 1
+                policy_loss, entropy_loss = ppo.forward(samples)
+                loss = policy_loss + entropy_loss * entropy_coe
+                loss = loss.mean()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(params, max_grad_norm)
+                opt.step()
+                opt.zero_grad()
+            collector.reset()
+
             # cur_rewards = torch.mean(torch.stack([x[-1] for x in episodes])).detach().item()
