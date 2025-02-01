@@ -96,7 +96,7 @@ class GRPOCollector(LMCollector):
         elif mode == 'json':
             samples = ([(prompt, response, answer, reward.tolist()) for prompt, response, answer, input_ids, gen_log_probs, ref_log_probs, start_index, reward in self.episodes])
             with open(path, 'w') as f:
-                json.dump(samples, f, ensure_ascii=False)
+                json.dump(samples, f, ensure_ascii=False, indent=4)
 
     def sample(self, epoch: int, batch=2, shuffle=True, device="cpu"):
         for i in range(epoch):

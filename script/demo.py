@@ -29,20 +29,21 @@ if __name__ == "__main__":
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config={
-            "batch_size": 2,
+            "batch_size": 8,
             "epoch": 2,
             "inner_epoch": 1,
             "kl_coe": 0.1,
             "clip": 0.2,
             "max_sentence_len": 1024*8,
             "max_prompt_len": 1024,
-            "train_batch": 128,
+            "train_batch": 64,
+            "micro_batch": 4,
             "lr": 5e-6,
             "buffer": 4,
             "value_coe": 0.1,
             "entropy_coe": 0.005,
             "max_grad_norm": 0.5,
-            "number_responses": 2,
+            "number_responses": 16,
             "model": "Qwen2.5-1.5B-Instruct",
             "random_seed": 42,
         }
@@ -61,6 +62,7 @@ if __name__ == "__main__":
     max_sentence_len = config.max_sentence_len
     max_prompt_len = config.max_prompt_len
     train_batch = config.train_batch
+    micro_batch = config.micro_batch
     lr = config.lr
     buffer = config.buffer
     value_coe = config.value_coe
@@ -91,7 +93,7 @@ if __name__ == "__main__":
 
     collector = GRPOCollector(buffer, kl_coe, eos_token=tokenizer.eos_token_id)
 
-    dataset = DataLoader('data/test_data.json', batch_size=2)
+    dataset = DataLoader('data/test_data.json', batch_size=batch_size)
 
     sample_step = 0
     train_step = 0
@@ -130,7 +132,6 @@ if __name__ == "__main__":
                     reward = reward_model.rule_reward(response, answer_text)
                     rewards.append(reward)
                 rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-6)
-
                 for i in range(number_responses):
                     eos_index = (input_ids[i, start_index:] == tokenizer.eos_token_id).nonzero()
                     if len(eos_index) == 0:
@@ -144,8 +145,6 @@ if __name__ == "__main__":
 
             collector.dump_buffer(f'buffer_{i}.pkl', mode='pickle')
             collector.dump_buffer(f'buffer_{i}.json', mode='json')
-            wandb.finish()
-            os._exit(0)
             # average reward
             average_reward = np.mean([x[6] for x in collector.episodes])
             average_length = np.mean([len(x[2]) - x[5] for x in collector.episodes])
@@ -160,26 +159,38 @@ if __name__ == "__main__":
             })
 
             policy_model.train()
-            for samples in collector.sample(inner_epoch, batch=train_batch, device=device):
-                train_step += 1
+            accumulated_loss = 0
+            train_samples = 0
+            micro_train_samples = 0
+            for batch_idx, samples in enumerate(collector.sample(inner_epoch, batch=micro_batch, device=device)):
+                train_step += micro_batch
+                samples_num = samples.shape[0]
+                micro_train_samples += samples_num
+                print (f'start train batch {batch_idx}, micro samples_num: {micro_train_samples}, train samples_num: {train_samples}')
                 policy_loss, entropy_loss = ppo.forward(samples)
                 loss = policy_loss + entropy_loss * entropy_coe
                 loss = loss.mean()
                 loss.backward()
-                grad_norm = torch.nn.utils.clip_grad_norm_(params, max_grad_norm)
-                opt.step()
-                opt.zero_grad()
-                
-                # 记录训练阶段的指标
-                wandb.log({
-                    "train_step": train_step,
-                    "policy_loss": policy_loss.mean().item(),
-                    "entropy_loss": entropy_loss.mean().item(),
-                    "total_loss": loss.item(),
-                })
-                wandb.log({
-                    "gradient_norm": grad_norm,
-                })
+                accumulated_loss += loss.detach().cpu().item() * samples_num
+
+                if micro_train_samples >= train_batch:
+                    train_samples += micro_train_samples
+                    print (f'-----accumulated batch {batch_idx}, micro train samples: {micro_train_samples}, train samples: {train_samples}-----')
+                    grad_norm = torch.nn.utils.clip_grad_norm_(params, max_grad_norm)
+                    opt.step()
+                    opt.zero_grad()                
+                    wandb.log({
+                        "train_step": train_step,
+                        "policy_loss": policy_loss.mean().item(),
+                        "entropy_loss": entropy_loss.mean().item(),
+                        "total_loss": loss.item(),
+                        "accumulated_loss": accumulated_loss,
+                    })
+                    wandb.log({
+                        "gradient_norm": grad_norm,
+                    })
+                    micro_train_samples = 0
+                    accumulated_loss = 0
 
             collector.reset()
             # policy_model.save_policy_model()
