@@ -51,6 +51,7 @@ def stop():
 if __name__ == '__main__':
     from sys import argv
     model_path = argv[1]
+    device = argv[2]
     # 非阻塞的启动app
     worker = threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': 8000})
     worker.start()
@@ -59,8 +60,9 @@ if __name__ == '__main__':
         model=model_path,
         tensor_parallel_size=1,    # GPU数量
         trust_remote_code=True,
-        gpu_memory_utilization=0.45,
+        gpu_memory_utilization=0.7,
         dtype="bfloat16",         # 可选 "float16", "bfloat16", "float32"
+        device=f"cuda:{device}",   # 明确指定使用哪个GPU，例如 "cuda:0" 或 "cuda:1"
     )
     print ('vllm server finish loading model')
     model['status'] = 'running'

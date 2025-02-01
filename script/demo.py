@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch.optim
 from transformers import GPT2LMHeadModel, GPT2Model, BertTokenizer, Qwen2PreTrainedModel, Qwen2Tokenizer, Qwen2ForCausalLM
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 import time
 import numpy as np
 from nanoRL4GPT.lm_grpo import GRPO, softmax_fn
@@ -35,7 +35,9 @@ if __name__ == "__main__":
     max_grad_norm = 0.5
     number_responses = 10
 
-
+    device = 'cuda:0'
+    torch.cuda.set_device(device)
+    print (f'using device: {device}')     
     reward = MathReward()
 
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
@@ -61,6 +63,7 @@ if __name__ == "__main__":
 
     # policy_model.save_policy_model()
     # tokenizer.save_pretrained(update_path)
+    policy_model.start_vllm_server()
 
     for i in range(epoch):
         for prompts in dataset:
@@ -68,7 +71,6 @@ if __name__ == "__main__":
 
             print (f'start sample {sample_step}----------------------------')
             policy_model.eval()
-            policy_model.start_vllm_server()
             for prompt in prompts:
                 prompt_text = prompt['input']
                 answer_text = prompt['answer']
@@ -97,7 +99,6 @@ if __name__ == "__main__":
                     collector.add_buffer([episode])
             
             print (f'end sample {sample_step}----------------------------')
-            policy_model.stop_vllm_server()
             print ("episodes summary info: ", collector.summary())
             policy_model.train()
             for samples in collector.sample(inner_epoch, batch=train_batch, device=device):

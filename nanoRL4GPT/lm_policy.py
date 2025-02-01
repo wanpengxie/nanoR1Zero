@@ -95,8 +95,8 @@ class PolicyModel(nn.Module):
         input_ids = torch.LongTensor(outputs)
         start_index = len(prompt_token_ids)
 
-        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=256, model='gen')
-        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=256, model='ref')
+        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=16, model='gen')
+        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=16, model='ref')
         return input_ids, token_gen_probs, token_ref_probs, start_index
     
 
@@ -160,7 +160,7 @@ class PolicyModel(nn.Module):
     
     def start_vllm_server(self):
         # 利用subprocess启动vllm_server，并返回进程，以供后续停止，查看启动状态
-        self.vllm_process = subprocess.Popen(['python', './nanoRL4GPT/vllm_server.py', self.model_path])
+        self.vllm_process = subprocess.Popen(['python', './nanoRL4GPT/vllm_server.py', self.model_path, '1'])
 
         # 等待vllm_server启动，等待5分钟timeout
         for i in range(30):
