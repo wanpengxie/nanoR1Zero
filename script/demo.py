@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import torch.optim
 from transformers import GPT2LMHeadModel, GPT2Model, BertTokenizer, Qwen2PreTrainedModel, Qwen2Tokenizer
 from transformers import AutoModel, AutoTokenizer
@@ -34,8 +38,8 @@ if __name__ == "__main__":
 
     reward = MathReward()
 
-    model_path = '/hy-tmp/qwen2-1.5b-instruct'
-    update_path = '/hy-tmp/qwen2-1.5b-instruct-update'
+    model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
+    update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
     base_model = AutoModel.from_pretrained(model_path)
     ref_model = AutoModel.from_pretrained(model_path)
     gen_model = AutoModel.from_pretrained(model_path)

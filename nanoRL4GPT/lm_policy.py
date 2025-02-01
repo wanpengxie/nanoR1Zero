@@ -1,7 +1,6 @@
 # LM models of actor critor model
 import torch.nn
 from transformers import Qwen2PreTrainedModel, GenerationConfig
-from conf import Config
 from torch import nn
 import requests
 import json
