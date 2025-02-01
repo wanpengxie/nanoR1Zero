@@ -165,9 +165,9 @@ class PolicyModel(nn.Module):
 
     def save_policy_model(self):
         policy_state = self.policy_model.state_dict()
-        torch.save(policy_state, self.model_path)
+        self.policy_model.save_pretrained(self.model_path)
 
-        self.gen_model.load_state_dict(torch.load(self.model_path))
+        self.gen_model.load_state_dict(policy_state)
         self.gen_model.eval()
         for param in self.gen_model.parameters():
             param.requires_grad = False
