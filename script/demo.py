@@ -40,11 +40,11 @@ if __name__ == "__main__":
 
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
     update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
-    base_model = Qwen2ForCausalLM.from_pretrained(model_path)
-    ref_model = Qwen2ForCausalLM.from_pretrained(model_path)
-    gen_model = Qwen2ForCausalLM.from_pretrained(model_path)
+    base_model = Qwen2PreTrainedModel.from_pretrained(model_path)
+    ref_model = Qwen2PreTrainedModel.from_pretrained(model_path)
+    gen_model = Qwen2PreTrainedModel.from_pretrained(model_path)
     tokenizer = Qwen2Tokenizer.from_pretrained(model_path)
-    policy_model = PolicyModel(base_model, ref_model, gen_model, update_path).to(device)
+    policy_model = PolicyModel(base_model, ref_model, gen_model, model_path).to(device)
     reward_model = MathReward()
 
     ppo = GRPO(policy_model, reward, clip, logit_post_fn=softmax_fn(mask_ids=[0, 100]))
@@ -58,8 +58,8 @@ if __name__ == "__main__":
     sample_step = 0
     train_step = 0
 
-    policy_model.save_policy_model()
-    tokenizer.save_pretrained(update_path)
+    # policy_model.save_policy_model()
+    # tokenizer.save_pretrained(update_path)
 
     for i in range(epoch):
         for prompts in dataset:
@@ -109,6 +109,6 @@ if __name__ == "__main__":
                 opt.step()
                 opt.zero_grad()
             collector.reset()
-            policy_model.save_policy_model()
+            # policy_model.save_policy_model()
 
             # cur_rewards = torch.mean(torch.stack([x[-1] for x in episodes])).detach().item()
