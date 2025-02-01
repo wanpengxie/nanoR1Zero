@@ -1,6 +1,6 @@
 # LM models of actor critor model
 import torch.nn
-from transformers import Qwen2PreTrainedModel, GenerationConfig
+from transformers import Qwen2PreTrainedModel, GenerationConfig, Qwen2ForCausalLM
 from torch import nn
 import requests
 import json
@@ -8,7 +8,7 @@ import subprocess
 import time
 
 class PolicyModel(nn.Module):
-    def __init__(self, policy: Qwen2PreTrainedModel, ref: Qwen2PreTrainedModel, gen_model: Qwen2PreTrainedModel=None, model_path: str=None):
+    def __init__(self, policy: Qwen2ForCausalLM, ref: Qwen2ForCausalLM, gen_model: Qwen2ForCausalLM=None, model_path: str=None):
         super().__init__()
         self.vllm_process = None
         self.policy_model = policy

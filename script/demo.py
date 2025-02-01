@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch.optim
-from transformers import GPT2LMHeadModel, GPT2Model, BertTokenizer, Qwen2PreTrainedModel, Qwen2Tokenizer
+from transformers import GPT2LMHeadModel, GPT2Model, BertTokenizer, Qwen2PreTrainedModel, Qwen2Tokenizer, Qwen2ForCausalLM
 from transformers import AutoModel, AutoTokenizer
 import time
 import numpy as np
@@ -40,9 +40,9 @@ if __name__ == "__main__":
 
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
     update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
-    base_model = AutoModel.from_pretrained(model_path)
-    ref_model = AutoModel.from_pretrained(model_path)
-    gen_model = AutoModel.from_pretrained(model_path)
+    base_model = Qwen2ForCausalLM.from_pretrained(model_path)
+    ref_model = Qwen2ForCausalLM.from_pretrained(model_path)
+    gen_model = Qwen2ForCausalLM.from_pretrained(model_path)
     tokenizer = Qwen2Tokenizer.from_pretrained(model_path)
     policy_model = PolicyModel(base_model, ref_model, gen_model, update_path).to(device)
     reward_model = MathReward()
