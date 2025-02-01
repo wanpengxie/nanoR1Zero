@@ -86,7 +86,7 @@ class MathReward(BaseReward):
         reward = 0
         gold_expr = self.parse_ground_truth(ground_truth)
         ans_expr = self.parse_answer(gen_ans)
-        print (f'gold_expr: {gold_expr}, ans_expr: {ans_expr}')
+        print (f'gold_expr: {ground_truth} => {gold_expr}, ans_expr: {gen_ans} => {ans_expr}')
         if ans_expr is None:
                 reward = 0
         else:
