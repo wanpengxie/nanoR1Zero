@@ -40,20 +40,21 @@ def generate_batch():
     max_tokens = data.get('max_len', 8192)
     temperature = data.get('temperature', 0.01)
     top_p = data.get('top_p', 1.0)
-
+    num_return_sequences = data.get('number_responses', 2)
     sampling_params = SamplingParams(
         temperature=temperature,
         top_p=top_p,
         max_tokens=max_tokens,
         presence_penalty=0.0,
         frequency_penalty=0.0,
+        n=num_return_sequences,
     )
     outputs = model['llm'].generate(prompts, sampling_params)
     results = []
     for output in outputs:
         results.append({
             'prompt_text': output.prompt,  # prompt 的原始文本
-            'output_text': output.outputs[0].text
+            'output_text': [x.text for x in output.outputs]
         })
     return jsonify({
         'results': results

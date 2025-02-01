@@ -17,10 +17,12 @@ from nanoRL4GPT.data import DataLoader
 import wandb  # 添加wandb导入
 import requests
 import json
+from tqdm import tqdm
 
-def eval_aime24(dataset, reward_model, batch_size=128, tokenizer=None):
+def eval_aime24(dataset, reward_model, batch_size=128, tokenizer=None, number_responses=2):
     n = len(dataset)
-    rewards = []
+    pass_rewards = []    
+    mean_rewards = []
     for i in range(0, n, batch_size):
         batch = dataset[i:i+batch_size]
         prompts = [tokenizer.apply_chat_template(
@@ -31,17 +33,20 @@ def eval_aime24(dataset, reward_model, batch_size=128, tokenizer=None):
         answers = [x['answer'] for x in batch]
         results = requests.post(
             f'http://localhost:8000/generate_batch', 
-            json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.01, 'top_p': 1.0}
+            json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.01, 'top_p': 1.0, 'number_responses': number_responses}
         )
         results = results.json()
         for i, result in enumerate(results['results']):
             prompt_text = result['prompt_text']
-            answer_text = result['output_text']
+            answer_texts = result['output_text']
             gt_answer = answers[i]
-            reward = reward_model.rule_reward(answer_text, gt_answer)
-            rewards.append(reward)
-    print (f'average reward: {np.mean(rewards)}')
-    return np.mean(rewards)
+            reward = [reward_model.rule_reward(answer_text, gt_answer) for answer_text in answer_texts]
+            pass_rewards.append(max(reward))
+            mean_rewards.append(np.mean(reward))
+
+    print (f'average pass reward: {np.mean(pass_rewards)}')
+    print (f'average mean reward: {np.mean(mean_rewards)}')
+    return np.mean(pass_rewards), np.mean(mean_rewards)
 
 def eval_dataset(dataset, reward_model, batch_size=128):
     n = len(dataset)
@@ -148,7 +153,7 @@ if __name__ == "__main__":
     # tokenizer.save_pretrained(update_path)
     # policy_model.start_vllm_server()
     test_dataset = DataLoader('data/aime24_eval.json', batch_size=8)
-    eval_aime24(test_dataset, reward_model, batch_size=8, tokenizer=tokenizer)
+    eval_aime24(test_dataset, reward_model, batch_size=8, tokenizer=tokenizer, number_responses=16)
     # eval_dataset(test_dataset, reward_model, batch_size=64)
 
 
