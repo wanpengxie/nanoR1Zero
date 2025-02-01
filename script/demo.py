@@ -15,8 +15,29 @@ import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from nanoRL4GPT.data import DataLoader
 import wandb  # 添加wandb导入
+import requests
+import json
 
-
+def eval_dataset(dataset, reward_model, batch_size=128):
+    n = len(dataset)
+    rewards = []
+    for i in range(0, n, batch_size):
+        batch = dataset[i:i+batch_size]
+        prompts = [x['input'] for x in batch]
+        answers = [x['answer'] for x in batch]
+        results = requests.post(
+            f'http://localhost:8000/generate_batch', 
+            json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.01, 'top_p': 1.0}
+        )
+        results = results.json()
+        for i, result in enumerate(results):
+            prompt_text = result['prompt_text']
+            answer_text = result['output_text']
+            gt_answer = answers[i]
+            reward = reward_model.rule_reward(answer_text, gt_answer)
+            rewards.append(reward)
+            print (f'prompt: {prompt_text}-{prompts[i]}, answer: {reward_model.match_box(answer_text)}, gt_answer: {gt_answer}, reward: {reward}')
+    print (f'average reward: {np.mean(rewards)}')
 
 if __name__ == "__main__":
     import sys 
@@ -101,7 +122,8 @@ if __name__ == "__main__":
     # policy_model.save_policy_model()
     # tokenizer.save_pretrained(update_path)
     # policy_model.start_vllm_server()
-
+    test_dataset = DataLoader('data/math_verify_test.json', batch_size=128)
+    eval_dataset(test_dataset, reward_model)
     policy_model.policy_model.gradient_checkpointing_enable()
     for i in range(epoch):
         for prompts in dataset:

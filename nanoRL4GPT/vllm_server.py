@@ -33,6 +33,31 @@ def generate():
         'output_text': output_text
     })
 
+@app.route('/generate_batch', methods=['POST'])
+def generate_batch():
+    data = request.json
+    prompts = data['prompts']
+    max_tokens = data.get('max_len', 8192)
+    temperature = data.get('temperature', 0.01)
+    top_p = data.get('top_p', 1.0)
+
+    sampling_params = SamplingParams(
+        temperature=temperature,
+        top_p=top_p,
+        max_tokens=max_tokens,
+        presence_penalty=0.0,
+        frequency_penalty=0.0,
+    )
+    outputs = model['llm'].generate(prompts, sampling_params)
+    results = []
+    for output in outputs:
+        results.append({
+            'prompt_text': output.prompt,  # prompt 的原始文本
+            'output_text': output.outputs[0].text
+        })
+    return jsonify({
+        'results': results
+    })
 
 @app.route('/ping', methods=['GET'])
 def ping():
