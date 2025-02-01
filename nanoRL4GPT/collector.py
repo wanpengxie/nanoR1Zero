@@ -94,7 +94,7 @@ class GRPOCollector(LMCollector):
             with open(path, 'wb') as f:
                 pickle.dump(self.episodes, f)
         elif mode == 'json':
-            samples = [(prompt, response, answer, reward.tolist()) for prompt, response, answer, input_ids, gen_log_probs, ref_log_probs, start_index, reward in self.episodes]
+            samples = ([(prompt, response, answer, reward.tolist()) for prompt, response, answer, input_ids, gen_log_probs, ref_log_probs, start_index, reward in self.episodes])
             with open(path, 'w') as f:
                 json.dump(samples, f, ensure_ascii=False)
 

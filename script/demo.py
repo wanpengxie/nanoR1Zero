@@ -42,7 +42,7 @@ if __name__ == "__main__":
             "value_coe": 0.1,
             "entropy_coe": 0.005,
             "max_grad_norm": 0.5,
-            "number_responses": 16,
+            "number_responses": 2,
             "model": "Qwen2.5-1.5B-Instruct",
             "random_seed": 42,
         }
@@ -137,13 +137,14 @@ if __name__ == "__main__":
                         continue
                     else:
                         eos_index = eos_index[0][0].item() + start_index
-                    episode = (prompt_text, response_texts[i], answer_text, input_ids[i][:eos_index].tolist(), gen_log_probs[i][:eos_index-start_index+1].tolist(), ref_log_probs[i][:eos_index-start_index+1].tolist(), start_index, rewards[i])
+                    episode = (prompt_text, response_texts[i], [answer_text, reward_model.parse_ground_truth(answer_text), reward_model.parse_answer(response_texts[i])], input_ids[i][:eos_index].tolist(), gen_log_probs[i][:eos_index-start_index+1].tolist(), ref_log_probs[i][:eos_index-start_index+1].tolist(), start_index, rewards[i])
                     collector.add_buffer([episode])
             
             print (f'end sample {sample_step}----------------------------')
 
             collector.dump_buffer(f'buffer_{i}.pkl', mode='pickle')
             collector.dump_buffer(f'buffer_{i}.json', mode='json')
+            wandb.finish()
             os._exit(0)
             # average reward
             average_reward = np.mean([x[6] for x in collector.episodes])
