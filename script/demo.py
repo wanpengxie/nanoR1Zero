@@ -69,7 +69,7 @@ if __name__ == "__main__":
             policy_model.eval()
             policy_model.start_vllm_server()
             for prompt in prompts:
-                prompt_text = prompt['text']
+                prompt_text = prompt['input']
                 answer_text = prompt['answer']
                 input_ids, gen_log_probs, ref_log_probs, start_index = ppo.generate_episode(
                     None, 
