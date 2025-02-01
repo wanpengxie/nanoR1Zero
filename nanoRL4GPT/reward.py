@@ -83,17 +83,15 @@ class MathReward(BaseReward):
         return None
 
     def rule_reward(self, gen_ans, ground_truth):
-        rewards = []
-        for gen, truth in zip(gen_ans, ground_truth):
-            gold_expr = self.parse_ground_truth(truth)
-            ans_expr = self.parse_answer(gen)
-            print (f'gold_expr: {gold_expr}, ans_expr: {ans_expr}')
-            if ans_expr is None:
+        reward = 0
+        gold_expr = self.parse_ground_truth(ground_truth)
+        ans_expr = self.parse_answer(gen_ans)
+        print (f'gold_expr: {gold_expr}, ans_expr: {ans_expr}')
+        if ans_expr is None:
                 reward = 0
-            else:
+        else:
                 reward = float(verify(gold_expr, ans_expr))
-            rewards.append(reward)
-        return rewards
+        return reward
 
 
 class Reward(BaseReward):

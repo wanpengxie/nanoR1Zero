@@ -137,7 +137,7 @@ if __name__ == "__main__":
                         continue
                     else:
                         eos_index = eos_index[0][0].item() + start_index
-                    episode = (prompt_text, response_texts[i], [answer_text, reward_model.parse_ground_truth(answer_text), reward_model.parse_answer(response_texts[i])], input_ids[i][:eos_index].tolist(), gen_log_probs[i][:eos_index-start_index+1].tolist(), ref_log_probs[i][:eos_index-start_index+1].tolist(), start_index, rewards[i])
+                    episode = (prompt_text, response_texts[i], [answer_text, str(reward_model.parse_ground_truth(answer_text)), str(reward_model.parse_answer(response_texts[i]))], input_ids[i][:eos_index].tolist(), gen_log_probs[i][:eos_index-start_index+1].tolist(), ref_log_probs[i][:eos_index-start_index+1].tolist(), start_index, rewards[i])
                     collector.add_buffer([episode])
             
             print (f'end sample {sample_step}----------------------------')
