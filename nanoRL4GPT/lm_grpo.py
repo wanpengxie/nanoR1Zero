@@ -30,7 +30,14 @@ class GRPO(torch.nn.Module):
         # dim: token_ids: (batch, seq_len), label_ids: (batch, seq_len) => with padding -100, 
         # log_gen_probs: (batch, seq_len-1) with padding 0.0, log_ref_probs: (batch, seq_len) with padding 0.0, 
         # rewards: (batch, 1)
+        device = self.policy_model.device
         token_ids, label_ids, log_gen_probs, log_ref_probs, start_index, rewards = samples
+        token_ids = token_ids.to(device)
+        label_ids = label_ids.to(device)
+        log_gen_probs = log_gen_probs.to(device)
+        log_ref_probs = log_ref_probs.to(device)
+        rewards = rewards.to(device)
+        
         logits = self.policy_model.forward_policy(token_ids)
         safe_label_ids = label_ids.clamp(min=0)
         mask_ids = label_ids.ne(-100)

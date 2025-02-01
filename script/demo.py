@@ -41,7 +41,7 @@ if __name__ == "__main__":
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
     update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
     # base_model = AutoModel.from_pretrained(model_path)
-    base_model = AutoModel.from_pretrained(model_path)
+    base_model = AutoModel.from_pretrained(model_path).to('cuda')
     ref_model = AutoModel.from_pretrained(model_path)
     gen_model = AutoModel.from_pretrained(model_path)
     tokenizer = Qwen2Tokenizer.from_pretrained(model_path)
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     reward_model = MathReward()
 
     ppo = GRPO(policy_model, reward, clip, logit_post_fn=softmax_fn(mask_ids=[0, 100]))
-    params = list(policy_model.parameters())
+    params = list(policy_model.policy_model.parameters())
     opt = torch.optim.AdamW(params, lr=lr)
 
     collector = GRPOCollector(buffer, kl_coe, eos_token=tokenizer.eos_token_id)
