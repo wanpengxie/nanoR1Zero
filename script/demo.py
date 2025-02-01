@@ -18,6 +18,9 @@ from nanoRL4GPT.data import DataLoader
 
 
 if __name__ == "__main__":
+    import sys 
+    device = sys.argv[1]
+    # 
     torch.manual_seed(42)
     batch_size = 2
     epoch = 10
@@ -33,9 +36,9 @@ if __name__ == "__main__":
     value_coe = 0.1
     entropy_coe = 0.005
     max_grad_norm = 0.5
-    number_responses = 10
+    number_responses = 128
 
-    device = 'cuda:0'
+    device = f'cuda:{device}'
     torch.cuda.set_device(device)
     print (f'using device: {device}')     
     reward = MathReward()
@@ -63,7 +66,7 @@ if __name__ == "__main__":
 
     # policy_model.save_policy_model()
     # tokenizer.save_pretrained(update_path)
-    policy_model.start_vllm_server()
+    # policy_model.start_vllm_server()
 
     for i in range(epoch):
         for prompts in dataset:

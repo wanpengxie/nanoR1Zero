@@ -95,8 +95,8 @@ class PolicyModel(nn.Module):
         input_ids = torch.LongTensor(outputs)
         start_index = len(prompt_token_ids)
 
-        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=16, model='gen')
-        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=16, model='ref')
+        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=4, model='gen')
+        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=4, model='ref')
         return input_ids, token_gen_probs, token_ref_probs, start_index
     
 
