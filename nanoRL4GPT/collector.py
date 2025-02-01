@@ -2,7 +2,8 @@
 import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
-
+import json
+import pickle
 
 class LMCollector(object):
     def __init__(self, max_epsiodes, kl_coe, gamma=0.9, gae_lambda=0.9, pad_id=100):
@@ -87,6 +88,15 @@ class GRPOCollector(LMCollector):
     def add_buffer(self, episodes):
         self.episodes += episodes
         self.current_num += len(episodes)
+
+    def dump_buffer(self, path, mode='pickle'):
+        if mode == 'pickle':
+            with open(path, 'wb') as f:
+                pickle.dump(self.episodes, f)
+        elif mode == 'json':
+            samples = [(prompt, response, reward) for prompt, response, input_ids, gen_log_probs, ref_log_probs, start_index, reward in self.episodes]
+            with open(path, 'w') as f:
+                json.dump(samples, f, ensure_ascii=False)
 
     def sample(self, epoch: int, batch=2, shuffle=True, device="cpu"):
         for i in range(epoch):

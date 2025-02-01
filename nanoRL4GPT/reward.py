@@ -2,7 +2,7 @@ from transformers import GPT2PreTrainedModel
 import torch
 from latex2sympy2_extended import NormalizationConfig
 from math_verify import LatexExtractionConfig, parse, verify
-
+import re
 class BaseReward(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -19,9 +19,13 @@ class MathReward(BaseReward):
         super().__init__()
 
     def parse_answer(self, answer):
+        box_ans = self.match_box(answer)
+        if box_ans is None:
+            return None
+        
         try:
-            res = int(answer)
-            return [res, answer]
+            res = int(box_ans)
+            return [res, box_ans]
         except Exception as e:
             pass
         
@@ -70,14 +74,25 @@ class MathReward(BaseReward):
             return None
         return gold_expr
 
+    def match_box(self, response):
+        # re match box in response
+        pattern = r'\\boxed{(.*)}'
+        match = re.search(pattern, response)
+        if match:
+            return match.group(1)
+        return None
+
     def rule_reward(self, gen_ans, ground_truth):
         rewards = []
         for gen, truth in zip(gen_ans, ground_truth):
             gold_expr = self.parse_ground_truth(truth)
-            if gold_expr and len(gold_expr) != 0:
-                ans_expr = self.parse_answer(gen)
+            ans_expr = self.parse_answer(gen)
+            print (f'gold_expr: {gold_expr}, ans_expr: {ans_expr}')
+            if ans_expr is None:
+                reward = 0
+            else:
                 reward = float(verify(gold_expr, ans_expr))
-                rewards.append(reward)
+            rewards.append(reward)
         return rewards
 
 

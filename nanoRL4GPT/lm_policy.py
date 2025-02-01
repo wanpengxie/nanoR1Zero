@@ -82,21 +82,12 @@ class PolicyModel(nn.Module):
         output_token_list = result['output_list']
         prompt_token_ids = result['prompt_token_ids']
         max_len = max([len(output_token_ids) for output_token_ids in output_token_list])
-        outputs = [prompt_token_ids + output_token_ids + [eos_token] * (max_len - len(output_token_ids)) for output_token_ids in output_token_list]
-        # for output_token_ids in output_token_list:
-        #     if len(output_token_ids) < max_len:
-        #         outputs.append(prompt_token_ids + output_token_ids + [eos_token] * (max_len - len(output_token_ids)))
-        #     else:
-        #         if output_token_ids[-1] == eos_token:
-        #             outputs.append(prompt_token_ids + output_token_ids)
-        #         else:
-        #             continue
-                
+        outputs = [prompt_token_ids + output_token_ids + [eos_token] * (max_len - len(output_token_ids)) for output_token_ids in output_token_list]                
         input_ids = torch.LongTensor(outputs)
         start_index = len(prompt_token_ids)
 
-        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=4, model='gen')
-        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=4, model='ref')
+        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=2, model='gen')
+        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=2, model='ref')
         return input_ids, token_gen_probs, token_ref_probs, start_index
     
 
