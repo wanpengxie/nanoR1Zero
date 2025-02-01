@@ -75,22 +75,32 @@ class MathReward(BaseReward):
         return gold_expr
 
     def match_box(self, response):
-        # re match box in response
-        pattern = r'\\boxed{(.*)}'
-        match = re.search(pattern, response)
-        if match:
-            return match.group(1)
+        # find the last \boxed{...} in response
+        start = response.rfind('\\boxed{')
+        if start == -1:
+            return None
+        
+        start += 7  # length of '\boxed{'
+        count = 1
+        for i in range(start, len(response)):
+            if response[i] == '{':
+                count += 1
+            elif response[i] == '}':
+                count -= 1
+                if count == 0:
+                    return response[start:i]
         return None
-
+    
     def rule_reward(self, gen_ans, ground_truth):
         reward = 0
         gold_expr = self.parse_ground_truth(ground_truth)
         ans_expr = self.parse_answer(gen_ans)
-        print (f'gold_expr: {ground_truth} => {gold_expr}, ans_expr: {gen_ans} => {ans_expr}')
+        box_ans = self.match_box(gen_ans)
         if ans_expr is None:
                 reward = 0
         else:
                 reward = float(verify(gold_expr, ans_expr))
+        print (f'reward: {reward}, gold_expr: {ground_truth} => {gold_expr}, ans_expr: {box_ans} => {ans_expr}')            
         return reward
 
 

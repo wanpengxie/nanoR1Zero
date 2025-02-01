@@ -113,7 +113,6 @@ class PolicyModel(nn.Module):
             raise ValueError(f"Invalid model: {model}")
         input_batch = input_ids.shape[0]
         token_probs_all = None
-        print (f'input_batch: {input_batch}, batch_size: {batch_size}')
         if input_batch > batch_size:
             for i in range(0, input_batch, batch_size):
                 input_ids_batch = input_ids[i:i+batch_size].to(model.device)

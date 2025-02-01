@@ -109,6 +109,7 @@ if __name__ == "__main__":
 
             print (f'start sample {sample_step}----------------------------')
             policy_model.eval()
+            sample_rewards = []
             for prompt in prompts:
                 prompt_text = prompt['input']
                 answer_text = prompt['answer']
@@ -131,14 +132,23 @@ if __name__ == "__main__":
                 for response in response_texts:
                     reward = reward_model.rule_reward(response, answer_text)
                     rewards.append(reward)
-                rewards = (rewards - np.mean(rewards)) / (np.std(rewards) + 1e-6)
+                print (f'question level: {level}, rewards size: {len(rewards)}, mean: {np.mean(rewards)}, std: {np.std(rewards)}')
+                sample_rewards.append(np.mean(rewards))
+                rewards = [(r - np.mean(rewards)) / (np.std(rewards) + 1e-6) for r in rewards]
                 for i in range(number_responses):
                     eos_index = (input_ids[i, start_index:] == tokenizer.eos_token_id).nonzero()
                     if len(eos_index) == 0:
                         continue
                     else:
                         eos_index = eos_index[0][0].item() + start_index
-                    episode = (prompt_text, response_texts[i], [answer_text, str(reward_model.parse_ground_truth(answer_text)), str(reward_model.parse_answer(response_texts[i]))], input_ids[i][:eos_index].tolist(), gen_log_probs[i][:eos_index-start_index+1].tolist(), ref_log_probs[i][:eos_index-start_index+1].tolist(), start_index, rewards[i])
+                    episode = (prompt_text, 
+                               response_texts[i], 
+                               [answer_text, str(reward_model.parse_ground_truth(answer_text)), str(reward_model.parse_answer(response_texts[i]))], 
+                               input_ids[i][:eos_index].tolist(), 
+                               gen_log_probs[i][:eos_index-start_index+1].tolist(), 
+                               ref_log_probs[i][:eos_index-start_index+1].tolist(), 
+                               start_index, 
+                               rewards[i])
                     collector.add_buffer([episode])
             
             print (f'end sample {sample_step}----------------------------')
@@ -146,8 +156,8 @@ if __name__ == "__main__":
             collector.dump_buffer(f'buffer_{i}.pkl', mode='pickle')
             collector.dump_buffer(f'buffer_{i}.json', mode='json')
             # average reward
-            average_reward = np.mean([x[6] for x in collector.episodes])
-            average_length = np.mean([len(x[2]) - x[5] for x in collector.episodes])
+            average_reward = np.mean(sample_rewards)
+            average_length = np.mean([len(x[3]) - x[6] for x in collector.episodes])
             print (f'average reward: {average_reward}')
             print (f'average input_ids - start_index length: {average_length}')
 
@@ -164,7 +174,7 @@ if __name__ == "__main__":
             micro_train_samples = 0
             for batch_idx, samples in enumerate(collector.sample(inner_epoch, batch=micro_batch, device=device)):
                 train_step += micro_batch
-                samples_num = samples.shape[0]
+                samples_num = samples[0].shape[0]
                 micro_train_samples += samples_num
                 print (f'start train batch {batch_idx}, micro samples_num: {micro_train_samples}, train samples_num: {train_samples}')
                 policy_loss, entropy_loss = ppo.forward(samples)

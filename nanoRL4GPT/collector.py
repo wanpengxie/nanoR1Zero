@@ -94,7 +94,7 @@ class GRPOCollector(LMCollector):
             with open(path, 'wb') as f:
                 pickle.dump(self.episodes, f)
         elif mode == 'json':
-            samples = ([(prompt, response, answer, reward.tolist()) for prompt, response, answer, input_ids, gen_log_probs, ref_log_probs, start_index, reward in self.episodes])
+            samples = ([(prompt, response, answer, reward) for prompt, response, answer, input_ids, gen_log_probs, ref_log_probs, start_index, reward in self.episodes])
             with open(path, 'w') as f:
                 json.dump(samples, f, ensure_ascii=False, indent=4)
 
@@ -107,7 +107,7 @@ class GRPOCollector(LMCollector):
                 yield self.pack_samples(samples, device)
 
     def pack_samples(self, samples, device):
-        max_len = max([len(sample[2]) for sample in samples])
+        max_len = max([len(sample[3]) for sample in samples])
         pack_input_ids = []
         pack_label_ids = []
         pack_gen_log_probs = []
