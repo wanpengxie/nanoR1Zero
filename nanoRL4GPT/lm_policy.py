@@ -130,6 +130,7 @@ class PolicyModel(nn.Module):
         # 检测vllm_server是否启动，如果未启动，返回可能异常
         try:
             response = requests.get('http://localhost:8000/ping')
+            print (response.json())
             return response.status_code == 200 and response.json()['status'] == 'ok'
         except:
             return False
@@ -139,13 +140,14 @@ class PolicyModel(nn.Module):
         self.vllm_process = subprocess.Popen(['python', './nanoRL4GPT/vllm_server.py', self.model_path])
 
         # 等待vllm_server启动，等待5分钟timeout
-        for i in range(300):
+        for i in range(30):
             if self.detect_vllm_server():
-                break
-            time.sleep(1)
-        if not self.detect_vllm_server():
-            raise RuntimeError("Failed to start vllm_server")
-    
+                print ("vllm_server started")
+                return
+            else:
+                print ("vllm_server not started, waiting...")
+            time.sleep(10)
+
     def stop_vllm_server(self):
         # 强制停止进程
         try:

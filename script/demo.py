@@ -59,6 +59,7 @@ if __name__ == "__main__":
     train_step = 0
 
     policy_model.save_policy_model()
+    tokenizer.save_pretrained(update_path)
 
     for i in range(epoch):
         for prompts in dataset:
