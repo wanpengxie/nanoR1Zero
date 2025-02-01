@@ -42,9 +42,14 @@ class PolicyModel(nn.Module):
             param.requires_grad = False
 
     def train(self, mode=True):
+        self.policy_model = self.policy_model.to('cuda')
         self.policy_model.train(mode)
         self.ref_model.eval()
 
+    def eval(self):
+        self.policy_model = self.policy_model.cpu()
+        self.policy_model.eval()
+        self.ref_model.eval()
 
     def generate(self, input_ids, max_len=128, number_responses=4, eos_token=0, logit_fn=torch.nn.Softmax(dim=-1)):
         start_index = input_ids.shape[1]

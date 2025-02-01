@@ -41,9 +41,9 @@ if __name__ == "__main__":
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
     update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
     # base_model = AutoModel.from_pretrained(model_path)
-    base_model = AutoModel.from_pretrained(model_path).to('cuda')
-    ref_model = AutoModel.from_pretrained(model_path)
-    gen_model = AutoModel.from_pretrained(model_path)
+    base_model = Qwen2ForCausalLM.from_pretrained(model_path)
+    ref_model = Qwen2ForCausalLM.from_pretrained(model_path)
+    gen_model = Qwen2ForCausalLM.from_pretrained(model_path)
     tokenizer = Qwen2Tokenizer.from_pretrained(model_path)
     policy_model = PolicyModel(base_model, ref_model, gen_model, model_path)
     reward_model = MathReward()
