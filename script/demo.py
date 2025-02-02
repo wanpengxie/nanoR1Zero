@@ -169,8 +169,16 @@ if __name__ == "__main__":
 
     policy_model.policy_model.gradient_checkpointing_enable()
     for i in range(epoch):
-        eval_dataset(test_dataset, reward_model, batch_size=64, max_len=128)
+        # eval_dataset(test_dataset, reward_model, batch_size=64, max_len=128)
         for prompts in dataset:
+            # eval before sample and training
+            max_reward, mean_reward = eval_dataset(test_dataset, reward_model, batch_size=64, max_len=128)
+            print (f'max reward: {max_reward}, mean reward: {mean_reward}')
+            wandb.log({
+                "eval_max_reward": max_reward,
+                "eval_mean_reward": mean_reward,
+            }, step=sample_step)
+
             sample_step += 1
             t = time.time()
             print (f'start sample {sample_step}----------------------------, At {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
@@ -229,13 +237,9 @@ if __name__ == "__main__":
 
             # 记录采样阶段的指标
             wandb.log({
-                "sample_step": sample_step,
-                "sample_time": time.time() - t,
-                "sample_size": len(collector.episodes),
-                "prompt_size": len(prompts),
-                "average_reward": average_reward,
-                "average_length": average_length,
-            })
+                "sample_average_reward": average_reward,
+                "sample_average_length": average_length,
+            }, step=sample_step)
 
             policy_model.train()
             accumulated_loss = 0
