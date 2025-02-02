@@ -101,7 +101,7 @@ class MathReward(BaseReward):
                 reward = 0
         else:
                 reward = float(verify(gold_expr, ans_expr))
-        print (f'reward: {reward}, gold_expr: {ground_truth} => {gold_expr}, ans_expr: {box_ans} => {ans_expr}')            
+        # print (f'reward: {reward}, gold_expr: {ground_truth} => {gold_expr}, ans_expr: {box_ans} => {ans_expr}')            
         return reward
 
 

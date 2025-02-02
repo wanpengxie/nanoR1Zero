@@ -43,31 +43,39 @@ def eval_aime24(dataset, reward_model, batch_size=128, tokenizer=None, number_re
             reward = [reward_model.rule_reward(answer_text, gt_answer) for answer_text in answer_texts]
             pass_rewards.append(max(reward))
             mean_rewards.append(np.mean(reward))
-
+        print (f'batch {i} pass reward: {np.mean(pass_rewards)}, mean reward: {np.mean(mean_rewards)}')
     print (f'average pass reward: {np.mean(pass_rewards)}')
     print (f'average mean reward: {np.mean(mean_rewards)}')
     return np.mean(pass_rewards), np.mean(mean_rewards)
 
-def eval_dataset(dataset, reward_model, batch_size=128):
+def eval_dataset(dataset, reward_model, batch_size=128, max_len=128):
     n = len(dataset)
     rewards = []
+    pass_rewards = []    
+    mean_rewards = []
+
     for i in range(0, n, batch_size):
+        if max_len is not None and i >= max_len:
+            break
         batch = dataset[i:i+batch_size]
         prompts = [x['input'] for x in batch]
         answers = [x['answer'] for x in batch]
         results = requests.post(
             f'http://localhost:8000/generate_batch', 
-            json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.01, 'top_p': 1.0}
+            json={'prompts': prompts, 'max_len': 8192, 'temperature': 1.0, 'top_p': 1.0, 'number_responses': 4}
         )
         results = results.json()
-        for i, result in enumerate(results['results']):
+        for k, result in enumerate(results['results']):
             prompt_text = result['prompt_text']
-            answer_text = result['output_text']
-            gt_answer = answers[i]
-            reward = reward_model.rule_reward(answer_text, gt_answer)
-            rewards.append(reward)
-    print (f'average reward: {np.mean(rewards)}')
-    return np.mean(rewards)
+            answer_texts = result['output_text']
+            gt_answer = answers[k]
+            reward = [reward_model.rule_reward(answer, gt_answer) for answer in answer_texts]
+            pass_rewards.append(max(reward))
+            mean_rewards.append(np.mean(reward))
+        print (f'batch {i} pass reward: {np.mean(pass_rewards)}, mean reward: {np.mean(mean_rewards)}')
+    print (f'average pass reward: {np.mean(pass_rewards)}')
+    print (f'average mean reward: {np.mean(mean_rewards)}')
+    return np.mean(pass_rewards), np.mean(mean_rewards)
 
 if __name__ == "__main__":
     import sys 
@@ -76,7 +84,6 @@ if __name__ == "__main__":
     # api: 
     wandb.init(
         project="RL-Zero",  # 项目名称
-        name="Qwen2.5-1.5B-Instruct",
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config={
@@ -88,7 +95,7 @@ if __name__ == "__main__":
             "max_sentence_len": 1024*8,
             "max_prompt_len": 1024,
             "train_batch": 64,
-            "micro_batch": 4,
+            "micro_batch": 2,
             "lr": 5e-6,
             "buffer": 4,
             "value_coe": 0.1,
@@ -152,13 +159,16 @@ if __name__ == "__main__":
     # policy_model.save_policy_model()
     # tokenizer.save_pretrained(update_path)
     # policy_model.start_vllm_server()
-    test_dataset = DataLoader('data/aime24_eval.json', batch_size=8)
-    eval_aime24(test_dataset, reward_model, batch_size=8, tokenizer=tokenizer, number_responses=16)
-    # eval_dataset(test_dataset, reward_model, batch_size=64)
+    # test_dataset = DataLoader('data/aime24_eval.json', batch_size=8)
+    # eval_aime24(test_dataset, reward_model, batch_size=8, tokenizer=tokenizer, number_responses=16)
+
+    test_dataset = DataLoader('data/math_verify_test.json', batch_size=64)
+    # eval_dataset(test_dataset, reward_model, batch_size=64, max_len=None)
 
 
     policy_model.policy_model.gradient_checkpointing_enable()
     for i in range(epoch):
+        eval_dataset(test_dataset, reward_model, batch_size=64, max_len=128)
         for prompts in dataset:
             sample_step += 1
             t = time.time()
