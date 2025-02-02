@@ -150,7 +150,8 @@ class PolicyModel(nn.Module):
     
     def start_vllm_server(self, path, device='0'):
         # 利用subprocess启动vllm_server，并返回进程，以供后续停止，查看启动状态
-        self.vllm_process = subprocess.Popen(['python', './nanoRL4GPT/vllm_server.py', path, device])
+        log_file = open('vllm_server.log', 'w')
+        self.vllm_process = subprocess.Popen(['python', './nanoRL4GPT/vllm_server.py', path, device], stdout=log_file, stderr=log_file)
 
         # 等待vllm_server启动，等待5分钟timeout
         for i in range(30):
