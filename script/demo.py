@@ -227,8 +227,8 @@ if __name__ == "__main__":
             
             print (f'end sample {sample_step}----------------------------, time: {int(time.time() - t)}s')
 
-            collector.dump_buffer(f'buffer_{i}.pkl', mode='pickle')
-            collector.dump_buffer(f'buffer_{i}.json', mode='json')
+            collector.dump_buffer(f'buffer_{sample_step}_{i}.pkl', mode='pickle')
+            collector.dump_buffer(f'buffer_{sample_step}_{i}.json', mode='json')
             # average reward
             average_reward = np.mean(sample_rewards)
             average_length = np.mean([len(x[3]) - x[6] for x in collector.episodes])
