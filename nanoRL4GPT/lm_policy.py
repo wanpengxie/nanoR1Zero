@@ -148,9 +148,9 @@ class PolicyModel(nn.Module):
             print (e)
             return False
     
-    def start_vllm_server(self):
+    def start_vllm_server(self, path, device='0'):
         # 利用subprocess启动vllm_server，并返回进程，以供后续停止，查看启动状态
-        self.vllm_process = subprocess.Popen(['python', './nanoRL4GPT/vllm_server.py', self.model_path, '1'])
+        self.vllm_process = subprocess.Popen(['python', './nanoRL4GPT/vllm_server.py', path, device])
 
         # 等待vllm_server启动，等待5分钟timeout
         for i in range(30):
@@ -178,9 +178,9 @@ class PolicyModel(nn.Module):
     def is_vllm_server_running(self):
         return self.vllm_process is not None
 
-    def save_policy_model(self):
+    def save_policy_model(self, path):
         policy_state = self.policy_model.state_dict()
-        self.policy_model.save_pretrained(self.model_path)
+        self.policy_model.save_pretrained(path)
 
         self.gen_model.load_state_dict(policy_state)
         self.gen_model.eval()

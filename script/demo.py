@@ -43,7 +43,7 @@ def eval_aime24(dataset, reward_model, batch_size=128, tokenizer=None, number_re
             reward = [reward_model.rule_reward(answer_text, gt_answer) for answer_text in answer_texts]
             pass_rewards.append(max(reward))
             mean_rewards.append(np.mean(reward))
-        print (f'batch {i} pass reward: {np.mean(pass_rewards)}, mean reward: {np.mean(mean_rewards)}')
+        print (f'batch {i} pass reward: {max(reward)}, mean reward: {np.mean(reward)}')
     print (f'average pass reward: {np.mean(pass_rewards)}')
     print (f'average mean reward: {np.mean(mean_rewards)}')
     return np.mean(pass_rewards), np.mean(mean_rewards)
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config={
-            "batch_size": 8,
+            "batch_size": 16,
             "epoch": 2,
             "inner_epoch": 1,
             "kl_coe": 0.1,
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     collector = GRPOCollector(buffer, kl_coe, eos_token=tokenizer.eos_token_id)
 
-    dataset = DataLoader('data/test_data.json', batch_size=batch_size)
+    dataset = DataLoader('data/math_verify_train.json', batch_size=batch_size)
 
     sample_step = 0
     train_step = 0
@@ -163,8 +163,9 @@ if __name__ == "__main__":
     # eval_aime24(test_dataset, reward_model, batch_size=8, tokenizer=tokenizer, number_responses=16)
 
     test_dataset = DataLoader('data/math_verify_test.json', batch_size=64)
-    # eval_dataset(test_dataset, reward_model, batch_size=64, max_len=None)
-
+    policy_model.save_policy_model(update_path)
+    tokenizer.save_pretrained(update_path)
+    policy_model.start_vllm_server(update_path, '0')
 
     policy_model.policy_model.gradient_checkpointing_enable()
     for i in range(epoch):
@@ -172,7 +173,7 @@ if __name__ == "__main__":
         for prompts in dataset:
             sample_step += 1
             t = time.time()
-            print (f'start sample {sample_step}----------------------------')
+            print (f'start sample {sample_step}----------------------------, At {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
             policy_model.eval()
             sample_rewards = []
             for prompt in prompts:
@@ -216,7 +217,7 @@ if __name__ == "__main__":
                                rewards[i])
                     collector.add_buffer([episode])
             
-            print (f'end sample {sample_step}----------------------------, time: {time.time() - t}')
+            print (f'end sample {sample_step}----------------------------, time: {int(time.time() - t)}s')
 
             collector.dump_buffer(f'buffer_{i}.pkl', mode='pickle')
             collector.dump_buffer(f'buffer_{i}.json', mode='json')
@@ -241,7 +242,9 @@ if __name__ == "__main__":
             train_samples = 0
             micro_train_samples = 0
             t = time.time()
-            print (f'start train step {sample_step}----------------------------')
+            accumulated_policy_loss = 0
+            accumulated_entropy_loss = 0
+            print (f'start train step {sample_step}----------------------------, At {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
             for batch_idx, samples in enumerate(collector.sample(inner_epoch, batch=micro_batch, device=device)):
                 # train_step += micro_batch
                 samples_num = samples[0].shape[0]
@@ -252,6 +255,8 @@ if __name__ == "__main__":
                 loss = loss.mean()
                 loss.backward()
                 accumulated_loss += loss.detach().cpu().item() * samples_num
+                accumulated_policy_loss += policy_loss.detach().cpu().item() * samples_num
+                accumulated_entropy_loss += entropy_loss.detach().cpu().item() * samples_num
 
                 if micro_train_samples >= train_batch:
                     train_step += 1
@@ -264,19 +269,43 @@ if __name__ == "__main__":
                         "train_step": train_step,
                         "train_samples": train_samples,
                         "time": time.time() - t,
-                        "policy_loss": policy_loss.mean().item(),
-                        "entropy_loss": entropy_loss.mean().item(),
-                        "total_loss": loss.item(),
-                        "accumulated_loss": accumulated_loss,
+                        "policy_loss": accumulated_policy_loss / micro_train_samples,
+                        "entropy_loss": accumulated_entropy_loss * entropy_coe / micro_train_samples,
+                        "accumulated_loss": accumulated_loss / micro_train_samples,
                     })
                     wandb.log({
                         "gradient_norm": grad_norm,
                     })
                     micro_train_samples = 0
                     accumulated_loss = 0
-
+                    accumulated_policy_loss = 0
+                    accumulated_entropy_loss = 0
+            # final train step
+            if micro_train_samples > 0:
+                train_step += 1
+                train_samples += micro_train_samples
+                print (f'-----accumulated batch {batch_idx}, micro train samples: {micro_train_samples}, train samples: {train_samples}-----')
+                grad_norm = torch.nn.utils.clip_grad_norm_(params, max_grad_norm)
+                opt.step()
+                opt.zero_grad()                
+                wandb.log({
+                    "train_step": train_step,
+                    "train_samples": train_samples,
+                    "time": time.time() - t,
+                    "policy_loss": accumulated_policy_loss / micro_train_samples,
+                    "entropy_loss": accumulated_entropy_loss * entropy_coe / micro_train_samples,
+                    "accumulated_loss": accumulated_loss / micro_train_samples,
+                })
+                wandb.log({
+                    "gradient_norm": grad_norm,
+                })
+                
+            print (f'end train step {sample_step}----------------------------, time: {int(time.time() - t)}s')
             collector.reset()
-            # policy_model.save_policy_model()
+            print (f'sync vllm server: after train numbers: {train_step}-step/{train_samples}-samples')
+            policy_model.stop_vllm_server()
+            policy_model.save_policy_model(update_path)
+            policy_model.start_vllm_server(update_path, '0')
 
             # cur_rewards = torch.mean(torch.stack([x[-1] for x in episodes])).detach().item()
 

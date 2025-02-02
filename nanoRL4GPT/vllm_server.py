@@ -86,7 +86,7 @@ if __name__ == '__main__':
         model=model_path,
         tensor_parallel_size=1,    # GPU数量
         trust_remote_code=True,
-        gpu_memory_utilization=0.7,
+        gpu_memory_utilization=0.9,
         dtype="bfloat16",         # 可选 "float16", "bfloat16", "float32"
         device=f"cuda:{device}",   # 明确指定使用哪个GPU，例如 "cuda:0" 或 "cuda:1"
     )
