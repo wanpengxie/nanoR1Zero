@@ -155,7 +155,7 @@ if __name__ == "__main__":
     policy_model = PolicyModel(base_model, ref_model, gen_model, model_path)
     reward_model = MathReward()
 
-    ppo = GRPO(policy_model, reward_model, clip, logit_post_fn=softmax_fn(mask_ids=[0, 100]))
+    ppo = GRPO(policy_model, reward_model, clip)
     params = list(policy_model.policy_model.parameters())
     opt = torch.optim.AdamW(params, lr=lr)
 

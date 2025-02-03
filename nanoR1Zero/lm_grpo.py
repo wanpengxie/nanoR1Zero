@@ -44,7 +44,7 @@ class GRPO(torch.nn.Module):
         safe_label_ids = label_ids.clamp(min=0)
         mask_ids = label_ids.ne(-100)
 
-        token_probs = self.logit_post_fn(logits)
+        token_probs = torch.nn.Softmax(dim=-1)(logits)
         token_probs = torch.gather(token_probs, -1, safe_label_ids[:, :, None]).squeeze(-1)
         log_cur_probs = torch.log(token_probs)
 
