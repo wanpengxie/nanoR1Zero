@@ -53,7 +53,7 @@ def eval_dataset(dataset, reward_model, batch_size=128, max_len=128):
     rewards = []
     pass_rewards = []    
     mean_rewards = []
-
+    answer_lens = []
     for i in range(0, n, batch_size):
         if max_len is not None and i >= max_len:
             break
@@ -68,13 +68,17 @@ def eval_dataset(dataset, reward_model, batch_size=128, max_len=128):
         for k, result in enumerate(results['results']):
             prompt_text = result['prompt_text']
             answer_texts = result['output_text']
+            answer_token_ids = result['output_token_ids']
             gt_answer = answers[k]
             reward = [reward_model.rule_reward(answer, gt_answer) for answer in answer_texts]
+            answer_len = [len(x) for x in answer_token_ids]
             pass_rewards.append(max(reward))
             mean_rewards.append(np.mean(reward))
-        print (f'batch {i} pass reward: {np.mean(pass_rewards)}, mean reward: {np.mean(mean_rewards)}')
+            answer_lens.append(answer_len)
+        print (f'batch {i} pass reward: {max(reward)}, mean reward: {np.mean(reward)}, answer len: {np.mean(answer_len)}')
     print (f'average pass reward: {np.mean(pass_rewards)}')
     print (f'average mean reward: {np.mean(mean_rewards)}')
+    print (f'average answer len: {np.mean(answer_lens)}')
     return np.mean(pass_rewards), np.mean(mean_rewards)
 
 if __name__ == "__main__":
@@ -177,7 +181,7 @@ if __name__ == "__main__":
             wandb.log({
                 "eval_max_reward": max_reward,
                 "eval_mean_reward": mean_reward,
-            }, step=sample_step)
+            })
 
             sample_step += 1
             t = time.time()
@@ -239,7 +243,7 @@ if __name__ == "__main__":
             wandb.log({
                 "sample_average_reward": average_reward,
                 "sample_average_length": average_length,
-            }, step=sample_step)
+            })
 
             policy_model.train()
             accumulated_loss = 0

@@ -54,7 +54,8 @@ def generate_batch():
     for output in outputs:
         results.append({
             'prompt_text': output.prompt,  # prompt 的原始文本
-            'output_text': [x.text for x in output.outputs]
+            'output_text': [x.text for x in output.outputs],
+            'output_token_ids': [x.token_ids for x in output.outputs]
         })
     return jsonify({
         'results': results
