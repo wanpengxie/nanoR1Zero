@@ -33,7 +33,7 @@ def eval_aime24(dataset, reward_model, batch_size=128, tokenizer=None, number_re
         answers = [x['answer'] for x in batch]
         results = requests.post(
             f'http://localhost:8000/generate_batch', 
-            json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.01, 'top_p': 1.0, 'number_responses': number_responses}
+            json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.3, 'top_p': 1.0, 'number_responses': number_responses}
         )
         results = results.json()
         for i, result in enumerate(results['results']):
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config={
-            "batch_size": 16,
+            "batch_size": 8,
             "epoch": 2,
             "inner_epoch": 1,
             "kl_coe": 0.1,
@@ -106,10 +106,10 @@ if __name__ == "__main__":
             "max_prompt_len": 1024,
             "train_batch": 32,
             "micro_batch": 1,
-            "lr": 3e-5,
+            "lr": 1e-5,
             "buffer": 4,
             "value_coe": 0.1,
-            "entropy_coe": 0.005,
+            "entropy_coe": 0.1,
             "max_grad_norm": 0.5,
             "number_responses": 16,
             "model": "Qwen2.5-1.5B-Instruct",
@@ -148,9 +148,9 @@ if __name__ == "__main__":
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
     update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
     # base_model = AutoModel.from_pretrained(model_path)
-    base_model = Qwen2ForCausalLM.from_pretrained(model_path, use_cache=False)
+    base_model = Qwen2ForCausalLM.from_pretrained(update_path, use_cache=False)
     ref_model = Qwen2ForCausalLM.from_pretrained(model_path)
-    gen_model = Qwen2ForCausalLM.from_pretrained(model_path)
+    gen_model = Qwen2ForCausalLM.from_pretrained(update_path)
     tokenizer = Qwen2Tokenizer.from_pretrained(model_path)
     policy_model = PolicyModel(base_model, ref_model, gen_model, model_path)
     reward_model = MathReward()
@@ -263,16 +263,16 @@ if __name__ == "__main__":
                 # train_step += micro_batch
                 samples_num = samples[0].shape[0]
                 micro_train_samples += samples_num
-                print (f'start train batch {batch_idx}, micro samples_num: {micro_train_samples}, train samples_num: {train_samples}')
                 policy_loss, entropy_loss = ppo.forward(samples)
                 loss = - policy_loss + entropy_loss * entropy_coe
-                loss = loss.mean()
                 loss.backward()
                 accumulated_loss += loss.detach().cpu().item() * samples_num
                 policy_loss_acc = policy_loss.detach().cpu().item() * samples_num
                 entropy_loss_acc = entropy_loss.detach().cpu().item() * samples_num
                 accumulated_policy_loss += np.sqrt(policy_loss_acc * policy_loss_acc)
                 accumulated_entropy_loss += np.sqrt(entropy_loss_acc * entropy_loss_acc)
+                print (f'start train batch {batch_idx}, entropy loss: {entropy_loss.detach().cpu()}, policy loss: {policy_loss.detach().cpu()}, loss: {loss.detach().cpu()}')
+
 
                 if micro_train_samples >= train_batch:
                     train_step += 1
