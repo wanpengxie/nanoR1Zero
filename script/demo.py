@@ -95,7 +95,7 @@ if __name__ == "__main__":
             "max_sentence_len": 1024*8,
             "max_prompt_len": 1024,
             "train_batch": 64,
-            "micro_batch": 4,
+            "micro_batch": 2,
             "lr": 8e-6,
             "buffer": 4,
             "value_coe": 0.1,
@@ -249,6 +249,7 @@ if __name__ == "__main__":
                         collector.add_buffer([episode])
             policy_model.gen_model.cpu()
             policy_model.ref_model.cpu()
+            del input_ids, gen_log_probs, ref_log_probs
             torch.cuda.empty_cache()
 
             print (f'end sample {sample_step}----------------------------, time: {int(time.time() - t)}s')
