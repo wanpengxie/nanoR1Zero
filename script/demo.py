@@ -231,8 +231,8 @@ if __name__ == "__main__":
             
             print (f'end sample {sample_step}----------------------------, time: {int(time.time() - t)}s')
 
-            collector.dump_buffer(f'buffer_{sample_step}_{e}.pkl', mode='pickle')
-            collector.dump_buffer(f'buffer_{sample_step}_{e}.json', mode='json')
+            collector.dump_buffer(f'sample_buffer_{sample_step}_{e}.pkl', mode='pickle')
+            collector.dump_buffer(f'sample_buffer_{sample_step}_{e}.json', mode='json')
             # average reward
             average_reward = np.mean(sample_rewards)
             average_length = np.mean([len(x[3]) - x[6] for x in collector.episodes])
@@ -263,8 +263,10 @@ if __name__ == "__main__":
                 loss = loss.mean()
                 loss.backward()
                 accumulated_loss += loss.detach().cpu().item() * samples_num
-                accumulated_policy_loss += policy_loss.detach().cpu().item() * samples_num
-                accumulated_entropy_loss += entropy_loss.detach().cpu().item() * samples_num
+                policy_loss_acc = policy_loss.detach().cpu().item() * samples_num
+                entropy_loss_acc = entropy_loss.detach().cpu().item() * samples_num
+                accumulated_policy_loss += np.sqrt(policy_loss_acc * policy_loss_acc)
+                accumulated_entropy_loss += np.sqrt(entropy_loss_acc * entropy_loss_acc)
 
                 if micro_train_samples >= train_batch:
                     train_step += 1

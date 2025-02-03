@@ -50,9 +50,9 @@ class GRPO(torch.nn.Module):
 
         # grpo loss
         prob_ratio = torch.exp(log_cur_probs - log_gen_probs)
-        policy_loss = torch.min(prob_ratio, torch.clamp(prob_ratio, 1 - self.clip_range, 1 + self.clip_range))
+        policy_loss = torch.min(prob_ratio * rewards, torch.clamp(prob_ratio, 1 - self.clip_range, 1 + self.clip_range)  * rewards)
         policy_loss = torch.sum(policy_loss * mask_ids, dim=-1) / torch.sum(mask_ids, dim=-1)
-        policy_loss = torch.sum(policy_loss * rewards)
+        policy_loss = torch.sum(policy_loss)
         
         # kl divergence
         kl_divergence = torch.exp(log_ref_probs - log_cur_probs) - 1 - log_ref_probs + log_cur_probs
