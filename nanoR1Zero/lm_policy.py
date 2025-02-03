@@ -11,6 +11,8 @@ class PolicyModel(nn.Module):
     def __init__(self, policy: Qwen2ForCausalLM, ref: Qwen2ForCausalLM, gen_model: Qwen2ForCausalLM=None, model_path: str=None):
         super().__init__()
         self.vllm_process = None
+        self.devices = []
+
         self.policy_model = policy
         self.ref_model = ref
         self.ref_model.eval()
@@ -67,32 +69,15 @@ class PolicyModel(nn.Module):
         logits = torch.stack(outputs.logits, dim=1)
         return outputs.sequences, logits, start_index
 
-    def generate_vllm(self, prompt, max_len=128, number_responses=4, eos_token=0, logit_fn=torch.nn.Softmax(dim=-1)):
-        # result = self.vllm(prompt, max_len, number_responses, eos_token)
-        result = requests.post(
-            f'http://localhost:8000/generate', 
-            json={'prompt': prompt, 
-                    'max_len': max_len, 
-                    'number_responses': number_responses, 
-                    'eos_token': eos_token,
-                    'temperature': 1.0, 
-                    'top_p': 1.0,
-                    'model_path': self.model_path
-            }
-        )
-        result = json.loads(result.text)
-        output_token_list = result['output_list']
-        prompt_token_ids = result['prompt_token_ids']
-        max_len = max([len(output_token_ids) for output_token_ids in output_token_list])
-        outputs = [prompt_token_ids + output_token_ids + [eos_token] * (max_len - len(output_token_ids)) for output_token_ids in output_token_list]                
+    def generate_vllm(self, prompt_token_ids=None, output_token_ids_list=None, eos_token=0):
+        max_len = max([len(output_token_ids) for output_token_ids in output_token_ids_list])
+        outputs = [prompt_token_ids + output_token_ids + [eos_token] * (max_len - len(output_token_ids)) for output_token_ids in output_token_ids_list]                
         input_ids = torch.LongTensor(outputs)
         start_index = len(prompt_token_ids)
-
-        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=2, model='gen')
-        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=2, model='ref')
+        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=8, model='gen')
+        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=8, model='ref')
         return input_ids, token_gen_probs, token_ref_probs, start_index
     
-
     def forward_policy(self, input_ids):
         logits = self.policy_model.forward(input_ids).logits
         return logits
@@ -103,16 +88,11 @@ class PolicyModel(nn.Module):
         logits = torch.gather(logits, 2, targets).view(input_ids.shape[0], input_ids.shape[1]-1)
         return logits
 
-    @torch.no_grad()
     def calc_probs(self, input_ids, start_index, batch_size=16, model='ref'):
         if model == 'ref':
             model = self.ref_model
-            model = model.to('cuda').eval()
-        elif model == 'gen':
-            model = self.gen_model
-            model = model.to('cuda').eval()
         else:
-            raise ValueError(f"Invalid model: {model}")
+            model = self.gen_model
         input_batch = input_ids.shape[0]
         token_probs_all = None
         if input_batch > batch_size:
@@ -120,7 +100,7 @@ class PolicyModel(nn.Module):
                 input_ids_batch = input_ids[i:i+batch_size].to(model.device)
                 logits = model.forward(input_ids_batch).logits[:, start_index-1:-1, :]
                 probs = torch.nn.Softmax(dim=-1)(logits)
-                token_probs = torch.gather(probs, -1, input_ids_batch[:, start_index:, None]).squeeze(-1).detach().cpu()
+                token_probs = torch.log(torch.gather(probs, -1, input_ids_batch[:, start_index:, None])).squeeze(-1).detach().cpu()
                 if i == 0:
                     token_probs_all = token_probs
                 else:
@@ -129,37 +109,34 @@ class PolicyModel(nn.Module):
             input_ids_batch = input_ids.to(model.device)
             logits = model.forward(input_ids_batch).logits[:, start_index-1:-1, :]
             probs = torch.nn.Softmax(dim=-1)(logits)
-            token_probs = torch.gather(probs, -1, input_ids_batch[:, start_index:, None]).squeeze(-1).detach().cpu()
+            token_probs = torch.log(torch.gather(probs, -1, input_ids_batch[:, start_index:, None])).squeeze(-1).detach().cpu()
             token_probs_all = token_probs
+        return token_probs_all
 
-        # 将model移到cpu
-        if model == 'ref':
-            self.ref_model = self.ref_model.cpu()
-        elif model == 'gen':
-            self.gen_model = self.gen_model.cpu()
-        model = model.cpu()
-        return torch.log(token_probs_all)
-
-    def detect_vllm_server(self):
+    def detect_vllm_server(self, port):
         # 检测vllm_server是否启动，如果未启动，返回可能异常
         try:
-            response = requests.get('http://localhost:8000/ping')
+            response = requests.get(f'http://localhost:{port}/ping')
             print (response.json())
             return response.status_code == 200 and response.json()['status'] == 'ok'
         except Exception as e:
             print (e)
             return False
     
-    def start_vllm_server(self, path, device='0'):
+    def start_vllm_server(self, path, devices=[]):
         # 利用subprocess启动vllm_server，并返回进程，以供后续停止，查看启动状态
-        log_file = open('vllm_server.log', 'w')
-        self.vllm_process = subprocess.Popen(['python', './nanoR1Zero/vllm_server.py', path, device], stdout=log_file, stderr=log_file)
+        self.vllm_process = []
+        for device, port in devices:
+            log_file = open(f'vllm_server_{device}.log', 'w')
+            self.vllm_process.append(subprocess.Popen(['python', './nanoR1Zero/vllm_server.py', path, device, port], stdout=log_file, stderr=log_file))
+        self.devices = devices
 
         # 等待vllm_server启动，等待5分钟timeout
         for i in range(30):
-            if self.detect_vllm_server():
-                print ("vllm_server started")
-                return
+            for device, port in devices:
+                if self.detect_vllm_server(port):
+                    print ("vllm_server started")
+                    return
             else:
                 print ("vllm_server not started, waiting...")
             time.sleep(10)
@@ -167,16 +144,19 @@ class PolicyModel(nn.Module):
     def stop_vllm_server(self):
         # 强制停止进程
         try:
-            self.vllm_process.kill()
+            for process in self.vllm_process:
+                process.kill()
         except:
             pass
 
         try:
-            requests.get('http://localhost:8000/stop')
+            for device, port in self.devices:
+                requests.get(f'http://localhost:{port}/stop')
         except:
             pass
 
         self.vllm_process = None
+        self.devices = []
 
     def is_vllm_server_running(self):
         return self.vllm_process is not None

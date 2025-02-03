@@ -37,7 +37,9 @@ def generate():
 @app.route('/generate_batch', methods=['POST'])
 def generate_batch():
     data = request.json
-    prompts = data['prompts']
+    dataset = data['prompts']
+    prompts = [x['input'] for x in dataset]
+    answers = [x['answer'] for x in dataset]
     max_tokens = data.get('max_len', 8192)
     temperature = data.get('temperature', 0.01)
     top_p = data.get('top_p', 1.0)
@@ -52,16 +54,14 @@ def generate_batch():
     )
     outputs = model['llm'].generate(prompts, sampling_params)
     results = []
-    for output in outputs:
+    for i, output in enumerate(outputs):
         results.append({
-            'prompt_text': output.prompt,  # prompt 的原始文本
-            'output_text': [x.text for x in output.outputs],
-            'output_token_ids': [x.token_ids for x in output.outputs]
+            'prompt': output.prompt,  # prompt
+            'answer': answers[i],
+            'prompt_token_ids': output.prompt_token_ids,
+            'output_text_list': [x.text for x in output.outputs],
+            'output_token_ids_list': [list(x.token_ids) for x in output.outputs],
         })
-    try:
-        print (json.dumps(results, indent=4, ensure_ascii=False))
-    except Exception as e:
-        print (e)
     return jsonify({
         'results': results
     })
@@ -84,15 +84,16 @@ if __name__ == '__main__':
     from sys import argv
     model_path = argv[1]
     device = argv[2]
+    port = argv[3]
     # 非阻塞的启动app
-    worker = threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': 8000})
+    worker = threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': port})
     worker.start()
 
     model['llm'] = LLM(
         model=model_path,
         tensor_parallel_size=1,    # GPU数量
         trust_remote_code=True,
-        gpu_memory_utilization=0.9,
+        gpu_memory_utilization=0.8,
         dtype="bfloat16",         # 可选 "float16", "bfloat16", "float32"
         device=f"cuda:{device}",   # 明确指定使用哪个GPU，例如 "cuda:0" 或 "cuda:1"
     )

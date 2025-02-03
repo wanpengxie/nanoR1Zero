@@ -5,7 +5,7 @@ from nanoR1Zero.collector import LMCollector
 from nanoR1Zero.reward import BaseReward, Reward
 from nanoR1Zero.lm_policy import PolicyModel
 from torch.utils.tensorboard import SummaryWriter
-
+from typing import List
 
 class GRPO(torch.nn.Module):
     def __init__(self, policy_model: PolicyModel, reward: BaseReward, clip=0.1, logit_post_fn=None):
@@ -67,36 +67,6 @@ class GRPO(torch.nn.Module):
         setences, _, terminal_pos = self.policy_model.generate(input_ids, logit_fn=self.logit_post_fn)
         rewards = reward_model.forward(setences, terminal_pos)
         return rewards
-
-
-    # 并发生成，一个prompt，生成N个句子
-    @torch.no_grad()
-    def generate_episode(self,
-                         prompt_ids: torch.Tensor,
-                         max_sentence_len: int,
-                         number_responses: int,
-                         eos_token: int = 0,
-                         prompt: str = None,
-                         ):
-        # sequences, gen_logits, start_index = self.policy_model.generate(prompt_ids, max_sentence_len, number_responses, eos_token, self.logit_post_fn)
-
-        # ref_logits = self.policy_model.forward_ref(sequences)[:, start_index-1:-1, :]
-        # ref_probs = self.logit_post_fn(ref_logits)
-        # token_ref_probs = torch.gather(ref_probs, -1, sequences[:, start_index:, None]).squeeze(-1)
-
-        # gen_probs = self.logit_post_fn(gen_logits)
-        # token_gen_probs = torch.gather(gen_probs, -1, sequences[:, start_index:, None]).squeeze(-1)
-
-        # # detach
-        # input_ids = sequences.detach().cpu()
-        # gen_log_probs = torch.log(token_gen_probs).detach().cpu()
-        # ref_log_probs = torch.log(token_ref_probs).detach().cpu()
-        
-
-        ## using vllm server
-        input_ids, gen_log_probs, ref_log_probs, start_index = self.policy_model.generate_vllm(prompt, max_sentence_len, number_responses, eos_token)
-
-        return input_ids, gen_log_probs, ref_log_probs, start_index
 
 
 def softmax_fn(temp=1.0, mask_ids=[]):

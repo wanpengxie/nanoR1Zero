@@ -84,7 +84,16 @@ class GRPOCollector(LMCollector):
         super().__init__(max_epsiodes, kl_coe, gamma, gae_lambda, pad_id)
         self.eos_token = eos_token
         self.pad_id = pad_id
+        self.history = []
+        self.sample_step = 0
 
+    def reset(self):
+        self.history.append((self.sample_step, self.episodes))
+        self.episodes = []
+        self.current_num = 0
+        self.samples = []
+        self.sample_step += 1
+        
     def add_buffer(self, episodes):
         self.episodes += episodes
         self.current_num += len(episodes)
@@ -93,6 +102,8 @@ class GRPOCollector(LMCollector):
         if mode == 'pickle':
             with open(path, 'wb') as f:
                 pickle.dump(self.episodes, f)
+            with open(path + '_all', 'wb') as f:
+                pickle.dump({'history': self.history, 'current': self.episodes}, f)
         elif mode == 'json':
             samples = ([(prompt, response, answer, reward) for prompt, response, answer, input_ids, gen_log_probs, ref_log_probs, start_index, reward in self.episodes])
             with open(path, 'w') as f:
