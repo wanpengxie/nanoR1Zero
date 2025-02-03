@@ -4,6 +4,7 @@ import os
 import threading
 app = Flask(__name__)
 model = {}
+import json
 
 @app.route('/generate', methods=['POST'])
 def generate():
@@ -57,6 +58,10 @@ def generate_batch():
             'output_text': [x.text for x in output.outputs],
             'output_token_ids': [x.token_ids for x in output.outputs]
         })
+    try:
+        print (json.dumps(results, indent=4, ensure_ascii=False))
+    except Exception as e:
+        print (e)
     return jsonify({
         'results': results
     })
