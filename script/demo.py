@@ -97,7 +97,7 @@ if __name__ == "__main__":
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config={
-            "batch_size": 8,
+            "batch_size": 32,
             "epoch": 2,
             "inner_epoch": 1,
             "kl_coe": 0.1,
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             "max_prompt_len": 1024,
             "train_batch": 32,
             "micro_batch": 1,
-            "lr": 1e-5,
+            "lr": 3e-5,
             "buffer": 4,
             "value_coe": 0.1,
             "entropy_coe": 0.1,
@@ -180,6 +180,7 @@ if __name__ == "__main__":
     policy_model.policy_model.gradient_checkpointing_enable()
     for e in range(epoch):
         # eval_dataset(test_dataset, reward_model, batch_size=64, max_len=128)
+        policy_model.eval()
         for prompts in dataset:
             # eval before sample and training
             max_reward, mean_reward = eval_dataset(test_dataset, reward_model, batch_size=64, max_len=128)
@@ -192,7 +193,6 @@ if __name__ == "__main__":
             sample_step += 1
             t = time.time()
             print (f'start sample {sample_step}----------------------------, At {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
-            policy_model.eval()
             sample_rewards = []
             for prompt in prompts:
                 prompt_text = prompt['input']
@@ -216,8 +216,12 @@ if __name__ == "__main__":
                 for response in response_texts:
                     reward = reward_model.rule_reward(response, answer_text)
                     rewards.append(reward)
+                # if max rewards is 0, skip this prompt
                 print (f'question level: {level}, rewards size: {len(rewards)}, mean: {np.mean(rewards)}, std: {np.std(rewards)}')
                 sample_rewards.append(np.mean(rewards))
+                if max(rewards) <= 0:
+                    print (f'skip {prompt_text} because max rewards is 0, {answer_text}')
+                    continue
                 rewards = [(r - np.mean(rewards)) / (np.std(rewards) + 1e-6) for r in rewards]
                 for i in range(number_responses):
                     eos_index = (input_ids[i, start_index:] == tokenizer.eos_token_id).nonzero()

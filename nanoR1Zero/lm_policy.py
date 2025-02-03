@@ -45,11 +45,13 @@ class PolicyModel(nn.Module):
         self.policy_model = self.policy_model.to('cuda')
         self.policy_model.train(mode)
         self.ref_model.eval()
+        torch.cuda.empty_cache()
 
     def eval(self):
         self.policy_model = self.policy_model.cpu()
         self.policy_model.eval()
         self.ref_model.eval()
+        torch.cuda.empty_cache()
 
     def generate(self, input_ids, max_len=128, number_responses=4, eos_token=0, logit_fn=torch.nn.Softmax(dim=-1)):
         start_index = input_ids.shape[1]
@@ -105,10 +107,10 @@ class PolicyModel(nn.Module):
     def calc_probs(self, input_ids, start_index, batch_size=16, model='ref'):
         if model == 'ref':
             model = self.ref_model
-            model = model.to('cuda')
+            model = model.to('cuda').eval()
         elif model == 'gen':
             model = self.gen_model
-            model = model.to('cuda')
+            model = model.to('cuda').eval()
         else:
             raise ValueError(f"Invalid model: {model}")
         input_batch = input_ids.shape[0]
@@ -116,18 +118,20 @@ class PolicyModel(nn.Module):
         if input_batch > batch_size:
             for i in range(0, input_batch, batch_size):
                 input_ids_batch = input_ids[i:i+batch_size].to(model.device)
-                logits = model.forward(input_ids_batch).logits[:, start_index-1:-1, :]
+                logits = model.forward(input_ids_batch).logits.detach().cpu()
+                logits = logits[:, start_index-1:-1, :]
                 probs = torch.nn.Softmax(dim=-1)(logits)
-                token_probs = torch.gather(probs, -1, input_ids_batch[:, start_index:, None]).squeeze(-1).detach().cpu()
+                token_probs = torch.gather(probs, -1, input_ids_batch[:, start_index:, None]).squeeze(-1)
                 if i == 0:
                     token_probs_all = token_probs
                 else:
                     token_probs_all = torch.cat([token_probs_all, token_probs], dim=0)
         else:
             input_ids_batch = input_ids.to(model.device)
-            logits = model.forward(input_ids_batch).logits[:, start_index-1:-1, :]
+            logits = model.forward(input_ids_batch).logits.detach().cpu()
+            logits = logits[:, start_index-1:-1, :]
             probs = torch.nn.Softmax(dim=-1)(logits)
-            token_probs = torch.gather(probs, -1, input_ids_batch[:, start_index:, None]).squeeze(-1).detach().cpu()
+            token_probs = torch.gather(probs, -1, input_ids_batch[:, start_index:, None]).squeeze(-1)
             token_probs_all = token_probs
 
         # 将model移到cpu
@@ -182,8 +186,11 @@ class PolicyModel(nn.Module):
     def save_policy_model(self, path):
         policy_state = self.policy_model.state_dict()
         self.policy_model.save_pretrained(path)
-
         self.gen_model.load_state_dict(policy_state)
         self.gen_model.eval()
         for param in self.gen_model.parameters():
             param.requires_grad = False
+
+    def load_policy_model(self, path):
+        self.policy_model.load_state_dict(torch.load(path + '/policy_model.pth'))
+        self.sync_policy_model()
