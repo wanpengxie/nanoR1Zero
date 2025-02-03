@@ -106,7 +106,7 @@ if __name__ == "__main__":
             "max_prompt_len": 1024,
             "train_batch": 32,
             "micro_batch": 1,
-            "lr": 3e-5,
+            "lr": 8e-6,
             "buffer": 4,
             "value_coe": 0.1,
             "entropy_coe": 0.1,
@@ -269,6 +269,9 @@ if __name__ == "__main__":
                 micro_train_samples += samples_num
                 policy_loss, entropy_loss = ppo.forward(samples)
                 loss = - policy_loss + entropy_loss * entropy_coe
+                if torch.abs(entropy_loss) > 100:
+                    loss = loss * 0.0
+                    
                 loss.backward()
                 accumulated_loss += loss.detach().cpu().item() * samples_num
                 policy_loss_acc = policy_loss.detach().cpu().item() * samples_num
