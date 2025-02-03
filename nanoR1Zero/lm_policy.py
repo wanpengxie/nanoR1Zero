@@ -134,7 +134,7 @@ class PolicyModel(nn.Module):
         self.vllm_process = []
         for device, port in devices:
             log_file = open(f'vllm_server_{device}.log', 'w')
-            self.vllm_process.append(subprocess.Popen(['python', './nanoR1Zero/vllm_server.py', path, device, port], stdout=log_file, stderr=log_file))
+            self.vllm_process.append(subprocess.Popen(['python', './nanoR1Zero/vllm_server.py', path, str(device), str(port)], stdout=log_file, stderr=log_file))
             self.worker_urls.append(f'http://localhost:{port}')
         self.devices = devices
 

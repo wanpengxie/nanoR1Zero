@@ -71,9 +71,9 @@ def eval_dataset(urls, dataset, reward_model, batch_size=32, number_responses=4)
         pass_rewards.append(max(reward))
         mean_rewards.append(np.mean(reward))
         answer_lens.append(answer_len)
-    print (f'average pass reward: {np.mean(pass_rewards)}')
-    print (f'average mean reward: {np.mean(mean_rewards)}')
-    print (f'average answer len: {np.mean(answer_lens)}')
+    print (f'>> average pass reward: {np.mean(pass_rewards)}')
+    print (f'>> average mean reward: {np.mean(mean_rewards)}')
+    print (f'>> average answer len: {np.mean(answer_lens)}')
     return np.mean(pass_rewards), np.mean(mean_rewards), np.mean(answer_lens)
 
 

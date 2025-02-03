@@ -58,7 +58,7 @@ async def process_single_worker(
                 print(f"Error in worker {worker_id} for batch {i//batch_size}: {str(e)}")
                 continue
                 
-        print (f"End worker {worker_id}: processed {len(all_results)} samples, time: {time.time() - t}")
+        print (f"End worker {worker_id}: processed {len(all_results)} samples, time: {time.time() - t}\n\n")
         return all_results
 
 async def async_batch_generate(
