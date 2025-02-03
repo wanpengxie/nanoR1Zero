@@ -201,7 +201,7 @@ if __name__ == "__main__":
                 'max_tokens': 8192,
                 'number_responses': number_responses,
             }
-            results = batch_generate(policy_model.worker_urls, prompts, 8, **args)
+            results = batch_generate([f'{url}/generate_batch' for url in policy_model.worker_urls], prompts, 8, **args)
             print (f'batch generate time: {time.time() - t}s, size: {len(results) * number_responses}')
 
             t = time.time()
