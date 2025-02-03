@@ -12,7 +12,7 @@ class LMCollector(object):
         self.pad_id = pad_id
         self.gamma = gamma
         self.gae_lambda = gae_lambda
-        self.reset()
+        # self.reset()
 
     def is_full(self) -> bool:
         return self.current_num >= self.max_epsiodes

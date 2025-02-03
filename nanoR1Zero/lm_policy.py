@@ -12,6 +12,7 @@ class PolicyModel(nn.Module):
         super().__init__()
         self.vllm_process = None
         self.devices = []
+        self.worker_urls = []
 
         self.policy_model = policy
         self.ref_model = ref
@@ -113,15 +114,20 @@ class PolicyModel(nn.Module):
             token_probs_all = token_probs
         return token_probs_all
 
-    def detect_vllm_server(self, port):
-        # 检测vllm_server是否启动，如果未启动，返回可能异常
-        try:
-            response = requests.get(f'http://localhost:{port}/ping')
-            print (response.json())
-            return response.status_code == 200 and response.json()['status'] == 'ok'
-        except Exception as e:
-            print (e)
-            return False
+    def detect_vllm_server(self):
+        is_ready = True
+        for url in self.worker_urls:
+            try:
+                response = requests.get(f'{url}/ping')
+                print (f'{url} status: {response.json()}')
+                if response.status_code == 200 and response.json()['status'] == 'ok':
+                    pass
+                else:
+                    is_ready = False
+            except Exception as e:
+                print (f'{url} error: {e}')
+                is_ready = False
+        return is_ready
     
     def start_vllm_server(self, path, devices=[]):
         # 利用subprocess启动vllm_server，并返回进程，以供后续停止，查看启动状态
@@ -129,16 +135,14 @@ class PolicyModel(nn.Module):
         for device, port in devices:
             log_file = open(f'vllm_server_{device}.log', 'w')
             self.vllm_process.append(subprocess.Popen(['python', './nanoR1Zero/vllm_server.py', path, device, port], stdout=log_file, stderr=log_file))
+            self.worker_urls.append(f'http://localhost:{port}')
         self.devices = devices
 
         # 等待vllm_server启动，等待5分钟timeout
         for i in range(30):
-            for device, port in devices:
-                if self.detect_vllm_server(port):
-                    print ("vllm_server started")
-                    return
-            else:
-                print ("vllm_server not started, waiting...")
+            if self.detect_vllm_server():
+                print ("vllm_server started")
+                return
             time.sleep(10)
 
     def stop_vllm_server(self):
@@ -150,13 +154,14 @@ class PolicyModel(nn.Module):
             pass
 
         try:
-            for device, port in self.devices:
-                requests.get(f'http://localhost:{port}/stop')
+            for url in self.worker_urls:
+                requests.get(f'{url}/stop')
         except:
             pass
 
         self.vllm_process = None
         self.devices = []
+        self.worker_urls = []
 
     def is_vllm_server_running(self):
         return self.vllm_process is not None
