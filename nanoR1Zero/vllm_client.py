@@ -45,7 +45,7 @@ async def process_single_worker(
                     worker_url,
                     json={
                         'prompts': batch,
-                        'max_len': args.max_len,
+                        'max_tokens': args.max_tokens,
                         'temperature': args.temperature,
                         'top_p': args.top_p,
                         'number_responses': args.number_responses

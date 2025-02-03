@@ -175,9 +175,11 @@ if __name__ == "__main__":
         last_train_prompts = None
         for prompts in dataset:
             # eval before sample and training
-            max_reward, mean_reward, resp_len = eval_dataset(policy_model.worker_urls, test_dataset, reward_model, batch_size=32, number_responses=4)
+            max_reward, mean_reward, resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls], 
+                                                             test_dataset, reward_model, batch_size=32, number_responses=4)
             if last_train_prompts is not None:
-                max_train_reward, mean_train_reward, train_resp_len = eval_dataset(policy_model.worker_urls, last_train_prompts, reward_model, batch_size=32, number_responses=4)
+                max_train_reward, mean_train_reward, train_resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls], 
+                                                                                last_train_prompts, reward_model, batch_size=32, number_responses=4)
                 wandb.log({
                     "train_max_reward": max_train_reward,
                     "train_mean_reward": mean_train_reward,
