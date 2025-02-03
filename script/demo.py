@@ -111,7 +111,7 @@ if __name__ == "__main__":
             "value_coe": 0.1,
             "entropy_coe": 0.1,
             "max_grad_norm": 0.5,
-            "number_responses": 16,
+            "number_responses": 8,
             "model": "Qwen2.5-1.5B-Instruct",
             "random_seed": 42,
         }
@@ -269,9 +269,7 @@ if __name__ == "__main__":
                 micro_train_samples += samples_num
                 policy_loss, entropy_loss = ppo.forward(samples)
                 loss = - policy_loss + entropy_loss * entropy_coe
-                if torch.abs(entropy_loss) > 100:
-                    loss = loss * 0.0
-                    
+
                 loss.backward()
                 accumulated_loss += loss.detach().cpu().item() * samples_num
                 policy_loss_acc = policy_loss.detach().cpu().item() * samples_num
@@ -279,7 +277,6 @@ if __name__ == "__main__":
                 accumulated_policy_loss += np.sqrt(policy_loss_acc * policy_loss_acc)
                 accumulated_entropy_loss += np.sqrt(entropy_loss_acc * entropy_loss_acc)
                 print (f'start train batch {batch_idx}, entropy loss: {entropy_loss.detach().cpu()}, policy loss: {policy_loss.detach().cpu()}, loss: {loss.detach().cpu()}')
-
 
                 if micro_train_samples >= train_batch:
                     train_step += 1
