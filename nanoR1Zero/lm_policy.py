@@ -136,7 +136,7 @@ class PolicyModel(nn.Module):
         elif model == 'gen':
             self.gen_model = self.gen_model.cpu()
         model = model.cpu()
-        return token_probs_all
+        return torch.log(token_probs_all)
 
     def detect_vllm_server(self):
         # 检测vllm_server是否启动，如果未启动，返回可能异常
