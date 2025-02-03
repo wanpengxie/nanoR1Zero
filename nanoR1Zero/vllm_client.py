@@ -6,7 +6,7 @@ import math
 import time
 @dataclass
 class GenerateArgs:
-    max_len: int = 8192
+    max_tokens: int = 8192
     temperature: float = 1.0
     top_p: float = 1.0
     number_responses: int = 4

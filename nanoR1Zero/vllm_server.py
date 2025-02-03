@@ -40,7 +40,7 @@ def generate_batch():
     dataset = data['prompts']
     prompts = [x['input'] for x in dataset]
     answers = [x['answer'] for x in dataset]
-    max_tokens = data.get('max_len', 8192)
+    max_tokens = data.get('max_tokens', 8192)
     temperature = data.get('temperature', 0.01)
     top_p = data.get('top_p', 1.0)
     num_return_sequences = data.get('number_responses', 2)

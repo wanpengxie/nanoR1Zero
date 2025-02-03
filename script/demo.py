@@ -205,6 +205,7 @@ if __name__ == "__main__":
             t = time.time()
             sample_rewards = []
 
+            policy_model.stop_vllm_server()
             policy_model.gen_model = policy_model.gen_model.to(device)
             policy_model.ref_model = policy_model.ref_model.to(device)
             policy_model.gen_model.eval()
@@ -340,7 +341,7 @@ if __name__ == "__main__":
             torch.cuda.empty_cache()
 
             print (f'sync vllm server: after train numbers: {train_step}-step/{train_samples}-samples')
-            policy_model.stop_vllm_server()
+            # policy_model.stop_vllm_server()
             policy_model.save_policy_model(update_path)
             policy_model.start_vllm_server(update_path, [('0', 8000), ('1', 8001)])
 
