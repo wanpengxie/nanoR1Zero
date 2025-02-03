@@ -97,21 +97,21 @@ if __name__ == "__main__":
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config={
-            "batch_size": 4,
+            "batch_size": 16,
             "epoch": 2,
             "inner_epoch": 1,
             "kl_coe": 0.1,
             "clip": 0.2,
             "max_sentence_len": 1024*8,
             "max_prompt_len": 1024,
-            "train_batch": 64,
-            "micro_batch": 2,
-            "lr": 5e-6,
+            "train_batch": 32,
+            "micro_batch": 1,
+            "lr": 3e-5,
             "buffer": 4,
             "value_coe": 0.1,
             "entropy_coe": 0.005,
             "max_grad_norm": 0.5,
-            "number_responses": 8,
+            "number_responses": 16,
             "model": "Qwen2.5-1.5B-Instruct",
             "random_seed": 42,
         }
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
     update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
     # base_model = AutoModel.from_pretrained(model_path)
-    base_model = Qwen2ForCausalLM.from_pretrained(model_path)
+    base_model = Qwen2ForCausalLM.from_pretrained(model_path, use_cache=False)
     ref_model = Qwen2ForCausalLM.from_pretrained(model_path)
     gen_model = Qwen2ForCausalLM.from_pretrained(model_path)
     tokenizer = Qwen2Tokenizer.from_pretrained(model_path)
