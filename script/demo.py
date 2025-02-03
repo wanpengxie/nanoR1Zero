@@ -65,6 +65,9 @@ def eval_dataset(dataset, reward_model, batch_size=128, max_len=128):
             json={'prompts': prompts, 'max_len': 8192, 'temperature': 1.0, 'top_p': 1.0, 'number_responses': 4}
         )
         results = results.json()
+        batch_pass_rewards = []
+        batch_mean_rewards = []
+        batch_answer_lens = []
         for k, result in enumerate(results['results']):
             prompt_text = result['prompt_text']
             answer_texts = result['output_text']
@@ -75,7 +78,10 @@ def eval_dataset(dataset, reward_model, batch_size=128, max_len=128):
             pass_rewards.append(max(reward))
             mean_rewards.append(np.mean(reward))
             answer_lens.append(answer_len)
-        print (f'batch {i} pass reward: {max(reward)}, mean reward: {np.mean(reward)}, answer len: {np.mean(answer_len)}')
+            batch_pass_rewards.append(max(reward))
+            batch_mean_rewards.append(np.mean(reward))
+            batch_answer_lens.append(np.mean(answer_len))
+        print (f'batch {i} pass reward: {np.mean(batch_pass_rewards)}, mean reward: {np.mean(batch_mean_rewards)}, answer len: {np.mean(batch_answer_lens)}')
     print (f'average pass reward: {np.mean(pass_rewards)}')
     print (f'average mean reward: {np.mean(mean_rewards)}')
     print (f'average answer len: {np.mean(answer_lens)}')
@@ -259,7 +265,7 @@ if __name__ == "__main__":
                 micro_train_samples += samples_num
                 print (f'start train batch {batch_idx}, micro samples_num: {micro_train_samples}, train samples_num: {train_samples}')
                 policy_loss, entropy_loss = ppo.forward(samples)
-                loss = policy_loss + entropy_loss * entropy_coe
+                loss = - policy_loss + entropy_loss * entropy_coe
                 loss = loss.mean()
                 loss.backward()
                 accumulated_loss += loss.detach().cpu().item() * samples_num

@@ -50,7 +50,7 @@ class GRPO(torch.nn.Module):
 
         # grpo loss
         prob_ratio = torch.exp(log_cur_probs - log_gen_probs)
-        policy_loss = torch.min(prob_ratio * rewards, torch.clamp(prob_ratio, 1 - self.clip_range, 1 + self.clip_range)  * rewards)
+        policy_loss = torch.min(prob_ratio * rewards[:, None], torch.clamp(prob_ratio, 1 - self.clip_range, 1 + self.clip_range)  * rewards[:, None])
         policy_loss = torch.sum(policy_loss * mask_ids, dim=-1) / torch.sum(mask_ids, dim=-1)
         policy_loss = torch.sum(policy_loss)
         
