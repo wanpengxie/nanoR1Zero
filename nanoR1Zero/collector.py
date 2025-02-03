@@ -85,7 +85,10 @@ class GRPOCollector(LMCollector):
         self.eos_token = eos_token
         self.pad_id = pad_id
         self.history = []
+        self.episodes = []
         self.sample_step = 0
+        self.current_num = 0
+        self.samples = []
 
     def reset(self):
         self.history.append((self.sample_step, self.episodes))

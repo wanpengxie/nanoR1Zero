@@ -222,7 +222,7 @@ if __name__ == "__main__":
                         continue
                     response_texts = result['output_text_list']
                     rewards = [reward_model.rule_reward(response, answer_text) for response in response_texts]
-                    print (f'rewards size: {len(rewards)}, mean: {np.mean(rewards)}, std: {np.std(rewards)}')
+                    # print (f'rewards size: {len(rewards)}, mean: {np.mean(rewards)}, std: {np.std(rewards)}')
                     sample_rewards.append(np.mean(rewards))
                     rewards = [(r - np.mean(rewards)) / (np.std(rewards) + 1e-6) for r in rewards]
 
