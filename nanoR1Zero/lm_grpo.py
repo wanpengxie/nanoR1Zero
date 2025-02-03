@@ -1,9 +1,9 @@
 import torch.nn
 
-from nanoRL4GPT.conf import Config
-from nanoRL4GPT.collector import LMCollector
-from nanoRL4GPT.reward import BaseReward, Reward
-from nanoRL4GPT.lm_policy import PolicyModel
+from nanoR1Zero.conf import Config
+from nanoR1Zero.collector import LMCollector
+from nanoR1Zero.reward import BaseReward, Reward
+from nanoR1Zero.lm_policy import PolicyModel
 from torch.utils.tensorboard import SummaryWriter
 
 

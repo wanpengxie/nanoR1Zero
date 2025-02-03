@@ -7,13 +7,13 @@ from transformers import GPT2LMHeadModel, GPT2Model, BertTokenizer, Qwen2PreTrai
 from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 import time
 import numpy as np
-from nanoRL4GPT.lm_grpo import GRPO, softmax_fn
-from nanoRL4GPT.lm_policy import PolicyModel
-from nanoRL4GPT.reward import BaseReward, CounterReward, MathReward
-from nanoRL4GPT.collector import GRPOCollector
+from nanoR1Zero.lm_grpo import GRPO, softmax_fn
+from nanoR1Zero.lm_policy import PolicyModel
+from nanoR1Zero.reward import BaseReward, CounterReward, MathReward
+from nanoR1Zero.collector import GRPOCollector
 import tqdm
 from torch.utils.tensorboard import SummaryWriter
-from nanoRL4GPT.data import DataLoader
+from nanoR1Zero.data import DataLoader
 import wandb  # 添加wandb导入
 import requests
 import json
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config={
-            "batch_size": 16,
+            "batch_size": 4,
             "epoch": 2,
             "inner_epoch": 1,
             "kl_coe": 0.1,
@@ -101,7 +101,7 @@ if __name__ == "__main__":
             "value_coe": 0.1,
             "entropy_coe": 0.005,
             "max_grad_norm": 0.5,
-            "number_responses": 16,
+            "number_responses": 8,
             "model": "Qwen2.5-1.5B-Instruct",
             "random_seed": 42,
         }
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     device = f'cuda:{device}'
     torch.cuda.set_device(device)
     print (f'using device: {device}')     
-    reward = MathReward()
+    
 
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
     update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     policy_model = PolicyModel(base_model, ref_model, gen_model, model_path)
     reward_model = MathReward()
 
-    ppo = GRPO(policy_model, reward, clip, logit_post_fn=softmax_fn(mask_ids=[0, 100]))
+    ppo = GRPO(policy_model, reward_model, clip, logit_post_fn=softmax_fn(mask_ids=[0, 100]))
     params = list(policy_model.policy_model.parameters())
     opt = torch.optim.AdamW(params, lr=lr)
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     policy_model.start_vllm_server(update_path, '0')
 
     policy_model.policy_model.gradient_checkpointing_enable()
-    for i in range(epoch):
+    for e in range(epoch):
         # eval_dataset(test_dataset, reward_model, batch_size=64, max_len=128)
         for prompts in dataset:
             # eval before sample and training
@@ -227,8 +227,8 @@ if __name__ == "__main__":
             
             print (f'end sample {sample_step}----------------------------, time: {int(time.time() - t)}s')
 
-            collector.dump_buffer(f'buffer_{sample_step}_{i}.pkl', mode='pickle')
-            collector.dump_buffer(f'buffer_{sample_step}_{i}.json', mode='json')
+            collector.dump_buffer(f'buffer_{sample_step}_{e}.pkl', mode='pickle')
+            collector.dump_buffer(f'buffer_{sample_step}_{e}.json', mode='json')
             # average reward
             average_reward = np.mean(sample_rewards)
             average_length = np.mean([len(x[3]) - x[6] for x in collector.episodes])
