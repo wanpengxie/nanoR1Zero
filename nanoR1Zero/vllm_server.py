@@ -95,6 +95,7 @@ if __name__ == '__main__':
         trust_remote_code=True,
         dtype="bfloat16",         # 可选 "float16", "bfloat16", "float32"
         device=f"cuda:{device}",   # 明确指定使用哪个GPU，例如 "cuda:0" 或 "cuda:1"
+        gpu_memory_utilization=0.6,
     )
     print ('vllm server finish loading model')
     model['status'] = 'running'

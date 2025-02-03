@@ -87,21 +87,21 @@ if __name__ == "__main__":
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config={
-            "batch_size": 8,
+            "batch_size": 32,
             "epoch": 2,
             "inner_epoch": 1,
             "kl_coe": 0.1,
             "clip": 0.2,
             "max_sentence_len": 1024*8,
             "max_prompt_len": 1024,
-            "train_batch": 16,
-            "micro_batch": 1,
-            "lr": 8e-5,
+            "train_batch": 64,
+            "micro_batch": 4,
+            "lr": 8e-6,
             "buffer": 4,
             "value_coe": 0.1,
-            "entropy_coe": 0.1,
+            "entropy_coe": 0.01,
             "max_grad_norm": 0.5,
-            "number_responses": 4,
+            "number_responses": 16,
             "model": "Qwen2.5-1.5B-Instruct",
             "random_seed": 42,
         }
@@ -176,10 +176,10 @@ if __name__ == "__main__":
         for prompts in dataset:
             # eval before sample and training
             max_reward, mean_reward, resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls], 
-                                                             test_dataset, reward_model, batch_size=32, number_responses=4)
+                                                             test_dataset, reward_model, batch_size=64, number_responses=4)
             if last_train_prompts is not None:
                 max_train_reward, mean_train_reward, train_resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls], 
-                                                                                last_train_prompts, reward_model, batch_size=32, number_responses=4)
+                                                                                last_train_prompts, reward_model, batch_size=4, number_responses=4)
                 wandb.log({
                     "train_max_reward": max_train_reward,
                     "train_mean_reward": mean_train_reward,
