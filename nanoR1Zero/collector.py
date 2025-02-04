@@ -29,7 +29,7 @@ class Collector(object):
 
     def sample(self, epoch: int, batch=2, shuffle=True, mix=None):
         samples = self.episodes
-        if mix is not None:
+        if mix is not None and len(self.history) > 0:
             history_samples = len(samples) * mix
             history_samples = np.random.choice(self.history, min(len(self.history), history_samples))
             samples = samples + history_samples

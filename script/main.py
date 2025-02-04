@@ -94,6 +94,7 @@ if __name__ == "__main__":
         for i in range(0, len(train_dataset), batch_size):
             prompts = train_dataset[i:i+batch_size]
             max_reward, mean_reward, resp_len = eval_dataset(vllm_client, test_dataset[:128], reward_model, batch_size=64, number_responses=4)
+            print (f'eval max_reward: {max_reward}, mean_reward: {mean_reward}, resp_len: {resp_len}')
             wandb.log({
                 "eval_max_reward": max_reward,
                 "eval_mean_reward": mean_reward,
@@ -117,7 +118,7 @@ if __name__ == "__main__":
             episodes = grpo.generate_episodes(results)
             torch.cuda.empty_cache()
 
-            collector.add_buffer(episodes)
+            collector.add_episodes(episodes)
             print (f'end sample {sample_step}----------------------------, time: {int(time.time() - t)}s')
             collector.dump_episodes(f'episodes.pkl')
 
