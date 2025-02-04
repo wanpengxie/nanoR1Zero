@@ -17,6 +17,7 @@ class GRPO(torch.nn.Module):
         self.params = list(policy_model.policy_model.parameters())
         self.opt = torch.optim.AdamW(self.params, lr=lr)
         self.device = policy_model.device
+        self.reward_model = reward
 
     def forward(self, samples):
         device = self.policy_model.policy_model.device
@@ -152,7 +153,7 @@ class GRPO(torch.nn.Module):
         if micro_train_samples > 0:
             train_step += 1
             train_samples += micro_train_samples
-            grad_norm = torch.nn.utils.clip_grad_norm_(self.params, self.max_grad_norm)
+            torch.nn.utils.clip_grad_norm_(self.params, self.max_grad_norm)
             self.opt.step()
             self.opt.zero_grad()
             wandb.log({

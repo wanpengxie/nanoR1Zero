@@ -142,7 +142,6 @@ class VLLMClient(object):
         for device, port in zip(self.ngpus, self.ports):
             log_file = open(f'vllm_server_{device}.log', 'w')
             self.vllm_process.append(subprocess.Popen(['python', './nanoR1Zero/vllm_server.py', self.path, str(device), str(port)], stdout=log_file, stderr=log_file))
-            self.worker_urls.append(f'http://localhost:{port}')
 
         for i in range(30):
             if self.detect_vllm_server():
@@ -162,7 +161,6 @@ class VLLMClient(object):
                 requests.get(stop_endpoint)
         except:
             pass
-
         self.vllm_process = []
 
     def detect_vllm_server(self):

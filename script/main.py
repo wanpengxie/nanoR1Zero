@@ -46,12 +46,12 @@ if __name__ == "__main__":
         config = json.load(f)
 
     wandb.init(
-        project="RL-Zero",  # 项目名称
+        project="RL Zero",  # 项目名称
         group="baseline",
         tags=["math", "Qwen2.5-1.5B-Instruct", "baseline", "rl-zero"],
         config=config,
     )
-
+    config = wandb.config
     batch_size = config.batch_size
     epoch = config.epoch
     inner_epoch = config.inner_epoch

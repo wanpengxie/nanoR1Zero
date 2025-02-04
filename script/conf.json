@@ -11,7 +11,7 @@
     "entropy_coe": 0.01,
     "max_grad_norm": 0.5,
     "number_responses": 16,
-    "model_path": "Qwen2.5-1.5B-Instruct",
+    "model_path": "/hy-tmp/Qwen2.5-1.5B-Instruct",
     "random_seed": 42,
     "gpus": [0, 1],
     "sample_mix": 3
