@@ -72,13 +72,13 @@ class PolicyModel(nn.Module):
 
     def generate_vllm(self, prompt_token_ids=None, output_token_ids_list=None, eos_token=0):
         max_len = max([len(output_token_ids) for output_token_ids in output_token_ids_list])
-        outputs = [prompt_token_ids + output_token_ids + [eos_token] * (max_len - len(output_token_ids)) for output_token_ids in output_token_ids_list]                
+        outputs = [prompt_token_ids + output_token_ids + [eos_token] * (max_len - len(output_token_ids)) for output_token_ids in output_token_ids_list]
         input_ids = torch.LongTensor(outputs)
         start_index = len(prompt_token_ids)
-        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=8, model='gen')
-        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=8, model='ref')
+        token_gen_probs = self.calc_probs(input_ids, start_index, batch_size=2, model='gen')
+        token_ref_probs = self.calc_probs(input_ids, start_index, batch_size=2, model='ref')
         return input_ids, token_gen_probs, token_ref_probs, start_index
-    
+
     def forward_policy(self, input_ids):
         logits = self.policy_model.forward(input_ids).logits
         return logits
@@ -128,7 +128,7 @@ class PolicyModel(nn.Module):
                 print (f'{url} error: {e}')
                 is_ready = False
         return is_ready
-    
+
     def start_vllm_server(self, path, devices=[]):
         # 利用subprocess启动vllm_server，并返回进程，以供后续停止，查看启动状态
         self.vllm_process = []

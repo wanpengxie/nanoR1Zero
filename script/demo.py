@@ -23,18 +23,18 @@ from nanoR1Zero.vllm_client import batch_generate
 
 def eval_aime24(dataset, reward_model, batch_size=128, tokenizer=None, number_responses=2):
     n = len(dataset)
-    pass_rewards = []    
+    pass_rewards = []
     mean_rewards = []
     for i in range(0, n, batch_size):
         batch = dataset[i:i+batch_size]
         prompts = [tokenizer.apply_chat_template(
-            [{"role": "user", "content": x['problem']}], 
-            tokenize=False, 
-            add_generation_prompt=True) 
+            [{"role": "user", "content": x['problem']}],
+            tokenize=False,
+            add_generation_prompt=True)
             for x in batch]
         answers = [x['answer'] for x in batch]
         results = requests.post(
-            f'http://localhost:8000/generate_batch', 
+            f'http://localhost:8000/generate_batch',
             json={'prompts': prompts, 'max_len': 8192, 'temperature': 0.3, 'top_p': 1.0, 'number_responses': number_responses}
         )
         results = results.json()
@@ -78,10 +78,10 @@ def eval_dataset(urls, dataset, reward_model, batch_size=32, number_responses=4)
 
 
 if __name__ == "__main__":
-    import sys 
+    import sys
     device = sys.argv[1]
     # 初始化wandb
-    # api: 
+    # api:
     wandb.init(
         project="RL-Zero",  # 项目名称
         group="baseline",
@@ -95,7 +95,7 @@ if __name__ == "__main__":
             "max_sentence_len": 1024*8,
             "max_prompt_len": 1024,
             "train_batch": 64,
-            "micro_batch": 2,
+            "micro_batch": 1,
             "lr": 8e-6,
             "buffer": 4,
             "value_coe": 0.1,
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             "random_seed": 42,
         }
     )
-    
+
     # 从wandb配置中获取超参数
     config = wandb.config
 
@@ -132,8 +132,8 @@ if __name__ == "__main__":
 
     device = f'cuda:{device}'
     torch.cuda.set_device(device)
-    print (f'using device: {device}')     
-    
+    print (f'using device: {device}')
+
     torch_dtype = torch.bfloat16
     model_path = '/hy-tmp/Qwen2.5-1.5B-Instruct'
     update_path = '/hy-tmp/Qwen2.5-1.5B-Instruct-update'
@@ -175,15 +175,16 @@ if __name__ == "__main__":
         last_train_prompts = None
         for prompts in dataset:
             # eval before sample and training
-            max_reward, mean_reward, resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls], 
+            max_reward, mean_reward, resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls],
                                                              test_dataset, reward_model, batch_size=64, number_responses=4)
+
             if last_train_prompts is not None:
-                max_train_reward, mean_train_reward, train_resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls], 
+                max_train_reward, mean_train_reward, train_resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls],
                                                                                 last_train_prompts, reward_model, batch_size=4, number_responses=4)
                 wandb.log({
-                    "train_max_reward": max_train_reward,
-                    "train_mean_reward": mean_train_reward,
-                    "train_resp_len": train_resp_len,
+                    "train_after_max_reward": max_train_reward,
+                    "train_after_mean_reward": mean_train_reward,
+                    "train_after_resp_len": train_resp_len,
                 })
             wandb.log({
                 "eval_max_reward": max_reward,
@@ -191,6 +192,14 @@ if __name__ == "__main__":
                 "eval_resp_len": resp_len,
             })
             last_train_prompts = prompts
+            max_train_reward, mean_train_reward, train_resp_len = eval_dataset([f'{url}/generate_batch' for url in policy_model.worker_urls],
+                                                                            last_train_prompts, reward_model, batch_size=4, number_responses=4)
+            wandb.log({
+                "train_max_reward": max_train_reward,
+                "train_mean_reward": mean_train_reward,
+                "train_resp_len": train_resp_len,
+            })
+
 
             sample_step += 1
             t = time.time()
@@ -230,7 +239,7 @@ if __name__ == "__main__":
                         prompt_token_ids=result['prompt_token_ids'],
                         output_token_ids_list=result['output_token_ids_list'],
                         eos_token=tokenizer.eos_token_id,
-                    )  
+                    )
                     n = input_ids.shape[0]
                     for i in range(n):
                         eos_index = (input_ids[i, start_index:] == tokenizer.eos_token_id).nonzero()
@@ -238,13 +247,13 @@ if __name__ == "__main__":
                             continue
                         else:
                             eos_index = eos_index[0][0].item() + start_index
-                        episode = (prompt_text, 
-                                response_texts[i], 
-                                [answer_text, str(reward_model.parse_ground_truth(answer_text)), str(reward_model.parse_answer(response_texts[i]))], 
-                                input_ids[i][:eos_index].tolist(), 
-                                gen_log_probs[i][:eos_index-start_index+1].tolist(), 
-                                ref_log_probs[i][:eos_index-start_index+1].tolist(), 
-                                start_index, 
+                        episode = (prompt_text,
+                                response_texts[i],
+                                [answer_text, str(reward_model.parse_ground_truth(answer_text)), str(reward_model.parse_answer(response_texts[i]))],
+                                input_ids[i][:eos_index].tolist(),
+                                gen_log_probs[i][:eos_index-start_index+1].tolist(),
+                                ref_log_probs[i][:eos_index-start_index+1].tolist(),
+                                start_index,
                                 rewards[i])
                         collector.add_buffer([episode])
             policy_model.gen_model.cpu()
@@ -299,7 +308,7 @@ if __name__ == "__main__":
                     # scaler.unscale_(opt)
                     grad_norm = torch.nn.utils.clip_grad_norm_(params, max_grad_norm)
                     opt.step()
-                    opt.zero_grad()                
+                    opt.zero_grad()
                     wandb.log({
                         "train_step": train_step,
                         "train_samples": train_samples,
@@ -323,7 +332,7 @@ if __name__ == "__main__":
                 print (f'-----accumulated batch {batch_idx}, micro train samples: {micro_train_samples}, train samples: {train_samples}-----')
                 grad_norm = torch.nn.utils.clip_grad_norm_(params, max_grad_norm)
                 opt.step()
-                opt.zero_grad()                
+                opt.zero_grad()
                 wandb.log({
                     "train_step": train_step,
                     "train_samples": train_samples,
@@ -335,7 +344,7 @@ if __name__ == "__main__":
                 wandb.log({
                     "gradient_norm": grad_norm,
                 })
-                
+
             print (f'end train step {sample_step}----------------------------, time: {int(time.time() - t)}s')
             collector.reset()
             # 清理最后一次训练的变量和显存
