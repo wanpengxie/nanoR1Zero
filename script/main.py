@@ -129,7 +129,7 @@ if __name__ == "__main__":
                 "sample_average_reward": average_reward,
                 "sample_average_length": average_length,
             })
-            grpo.train(collector.sample(inner_epoch, batch=micro_batch, mix=sample_mix), train_batch)
+            train_step = grpo.train(collector.sample(inner_epoch, batch=micro_batch, mix=sample_mix), train_batch, train_step)
             torch.cuda.empty_cache()
 
             policy_model.save_policy_model()

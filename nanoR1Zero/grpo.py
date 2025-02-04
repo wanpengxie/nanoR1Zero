@@ -100,7 +100,7 @@ class GRPO(torch.nn.Module):
         self.policy_model.ref_model.cpu()
         return sample_episodes
     
-    def train(self, samples_iter, train_batch):
+    def train(self, samples_iter, train_batch, train_step):
         self.policy_model.train()
         accumulated_loss = 0
         train_samples = 0
@@ -165,6 +165,6 @@ class GRPO(torch.nn.Module):
                 "accumulated_loss": accumulated_loss / micro_train_samples,
             })
         self.policy_model.eval()
-
+        return train_step
 if __name__ == "__main__":
     pass

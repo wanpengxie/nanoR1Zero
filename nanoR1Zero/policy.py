@@ -13,6 +13,7 @@ class PolicyModel(nn.Module):
         self.model_path = model_path
         self.update_path = f'{model_path}-update'
         self.device = device
+        self.torch_dtype = torch_dtype
 
         self.ref_model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch_dtype)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
