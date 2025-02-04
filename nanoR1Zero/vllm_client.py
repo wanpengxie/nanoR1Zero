@@ -181,4 +181,5 @@ class VLLMClient(object):
         return is_ready
 
     def generate_batch(self, prompts: List[Dict], batch_size: int, **kwargs):
-        return batch_generate(self.endpoints, prompts, batch_size, **kwargs)
+        args = GenerateArgs(**kwargs)
+        return asyncio.run(async_batch_generate(self.endpoints, prompts, batch_size, args))
