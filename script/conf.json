@@ -1,0 +1,18 @@
+{
+    "batch_size": 32,
+    "epoch": 2,
+    "inner_epoch": 1,
+    "clip": 0.2,
+    "max_sentence_len": 8192,
+    "max_prompt_len": 1024,
+    "train_batch": 64,
+    "micro_batch": 1,
+    "lr": 8e-6,
+    "entropy_coe": 0.01,
+    "max_grad_norm": 0.5,
+    "number_responses": 16,
+    "model_path": "Qwen2.5-1.5B-Instruct",
+    "random_seed": 42,
+    "gpus": [0, 1],
+    "sample_mix": 3
+}

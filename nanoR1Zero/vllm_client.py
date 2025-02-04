@@ -4,6 +4,9 @@ from typing import List, Dict, Any
 from dataclasses import dataclass
 import math
 import time
+import subprocess
+import requests
+
 @dataclass
 class GenerateArgs:
     max_tokens: int = 8192
@@ -123,3 +126,59 @@ def batch_generate(
     args = GenerateArgs(**kwargs)
     return asyncio.run(async_batch_generate(worker_urls, dataset, batch_size, args))
 
+
+class VLLMClient(object):
+    def __init__(self, path: str, ngpus: List[int]):
+        self.path = path
+        self.ngpus = ngpus
+        self.ports = [8000 + i for i in range(len(ngpus))]
+        self.worker_urls = [f'http://localhost:{port}' for port in self.ports]
+        self.endpoints = [f'{url}/generate_batch' for url in self.worker_urls]
+        self.ping_endpoints = [f'{url}/ping' for url in self.worker_urls]
+        self.stop_endpoints = [f'{url}/stop' for url in self.worker_urls]
+        self.vllm_process = []
+
+    def start_vllm_server(self):
+        for device, port in zip(self.ngpus, self.ports):
+            log_file = open(f'vllm_server_{device}.log', 'w')
+            self.vllm_process.append(subprocess.Popen(['python', './nanoR1Zero/vllm_server.py', self.path, str(device), str(port)], stdout=log_file, stderr=log_file))
+            self.worker_urls.append(f'http://localhost:{port}')
+
+        for i in range(30):
+            if self.detect_vllm_server():
+                print ("vllm_server started")
+                return
+            time.sleep(10)
+
+    def stop_vllm_server(self):
+        try:
+            for process in self.vllm_process:
+                process.kill()
+        except:
+            pass
+
+        try:
+            for stop_endpoint in self.stop_endpoints:
+                requests.get(stop_endpoint)
+        except:
+            pass
+
+        self.vllm_process = []
+
+    def detect_vllm_server(self):
+        is_ready = True
+        for ping_endpoint in self.ping_endpoints:
+            try:
+                response = requests.get(ping_endpoint)
+                print (f'{ping_endpoint} status: {response.json()}')
+                if response.status_code == 200 and response.json()['status'] == 'ok':
+                    pass
+                else:
+                    is_ready = False
+            except Exception as e:
+                print (f'{ping_endpoint} error: {e}')
+                is_ready = False
+        return is_ready
+
+    def generate_batch(self, prompts: List[Dict], batch_size: int, **kwargs):
+        return batch_generate(self.endpoints, prompts, batch_size, **kwargs)
