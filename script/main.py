@@ -65,6 +65,7 @@ if __name__ == "__main__":
     max_grad_norm = config.max_grad_norm
     number_responses = config.number_responses
     sample_mix = config.sample_mix
+    eval_per_step = config.eval_per_step
 
     torch.manual_seed(config.random_seed)
 
@@ -76,8 +77,6 @@ if __name__ == "__main__":
     reward_model = MathReward()
     grpo = GRPO(policy_model, reward_model, clip)
 
-    # params = list(policy_model.policy_model.parameters())
-    # opt = torch.optim.AdamW(params, lr=lr)
 
     collector = Collector(eos_token=policy_model.tokenizer.eos_token_id)
     train_dataset = json.load(open('data/math_verify_train.json', 'r'))
@@ -89,17 +88,18 @@ if __name__ == "__main__":
     train_step = 0
 
 
-    # vllm_client.start_vllm_server()
+    vllm_client.start_vllm_server()
     for e in range(epoch):
         for i in range(0, len(train_dataset), batch_size):
             prompts = train_dataset[i:i+batch_size]
-            max_reward, mean_reward, resp_len = eval_dataset(vllm_client, test_dataset[:128], reward_model, batch_size=64, number_responses=4)
-            print (f'eval max_reward: {max_reward}, mean_reward: {mean_reward}, resp_len: {resp_len}')
-            wandb.log({
-                "eval_max_reward": max_reward,
-                "eval_mean_reward": mean_reward,
-                "eval_resp_len": resp_len,
-            })
+            if i % eval_per_step == 0:
+                max_reward, mean_reward, resp_len = eval_dataset(vllm_client, test_dataset[:128], reward_model, batch_size=64, number_responses=4)
+                print (f'eval max_reward: {max_reward}, mean_reward: {mean_reward}, resp_len: {resp_len}')
+                wandb.log({
+                    "eval_max_reward": max_reward,
+                    "eval_mean_reward": mean_reward,
+                    "eval_resp_len": resp_len,
+                })
 
             sample_step += 1
             t = time.time()
@@ -118,6 +118,7 @@ if __name__ == "__main__":
             episodes = grpo.generate_episodes(results)
             torch.cuda.empty_cache()
 
+            collector.reset()
             collector.add_episodes(episodes)
             print (f'end sample {sample_step}----------------------------, time: {int(time.time() - t)}s')
             collector.dump_episodes(f'episodes.pkl')
@@ -129,7 +130,10 @@ if __name__ == "__main__":
                 "sample_average_reward": average_reward,
                 "sample_average_length": average_length,
             })
-            train_size = len(collector.episodes) * (sample_mix + 1)
+            if sample_mix is not None:
+                train_size = len(collector.episodes) * (sample_mix + 1)
+            else:
+                train_size = len(collector.episodes)
             train_step = grpo.train(collector.sample(inner_epoch, batch=micro_batch, mix=sample_mix), 
                                     train_batch, 
                                     train_step,
