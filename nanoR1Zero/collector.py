@@ -14,7 +14,8 @@ class Collector(object):
         self.current_num = 0
 
     def reset(self):
-        self.history.append((self.sample_step, self.episodes))
+        if len(self.episodes) > 0:
+            self.history.append((self.sample_step, self.episodes))
         self.episodes = []
         self.current_num = 0
         self.sample_step += 1
@@ -39,8 +40,9 @@ class Collector(object):
             history_samples = []
             for i, history in enumerate(self.history):
                 history_samples.extend(history[1])
-            history_samples = np.random.choice(history_samples, min(len(history_samples), len(samples) * mix))
-            samples += history_samples
+            # history_samples = np.random.choice(history_samples, min(len(history_samples), len(samples) * mix))
+            np.random.shuffle(history_samples)
+            samples += history_samples[:len(samples) * mix]
 
         for i in range(epoch):
             if shuffle:

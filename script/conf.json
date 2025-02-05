@@ -6,7 +6,7 @@
     "max_sentence_len": 8192,
     "max_prompt_len": 1024,
     "train_batch": 64,
-    "micro_batch": 2,
+    "micro_batch": 1,
     "lr": 1e-5,
     "entropy_coe": 0.01,
     "max_grad_norm": 0.5,
@@ -14,6 +14,6 @@
     "model_path": "/hy-tmp/Qwen2.5-1.5B-Instruct",
     "random_seed": 42,
     "gpus": [0, 1],
-    "sample_mix": null,
-    "eval_per_step": 10
+    "sample_mix": 1,
+    "eval_per_step": 1
 }

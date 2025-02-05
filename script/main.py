@@ -93,7 +93,7 @@ if __name__ == "__main__":
         for i in range(0, len(train_dataset), batch_size):
             prompts = train_dataset[i:i+batch_size]
             if i % eval_per_step == 0:
-                max_reward, mean_reward, resp_len = eval_dataset(vllm_client, test_dataset[:128], reward_model, batch_size=64, number_responses=4)
+                max_reward, mean_reward, resp_len = eval_dataset(vllm_client, test_dataset, reward_model, batch_size=64, number_responses=4)
                 print (f'eval max_reward: {max_reward}, mean_reward: {mean_reward}, resp_len: {resp_len}')
                 wandb.log({
                     "eval_max_reward": max_reward,
@@ -109,7 +109,7 @@ if __name__ == "__main__":
                 'max_tokens': 8192,
                 'number_responses': number_responses,
             }
-            results = vllm_client.generate_batch(prompts, 8, **args)
+            results = vllm_client.generate_batch(prompts, 32, **args)
             print (f'batch generate time: {time.time() - t}s, size: {len(results) * number_responses}')
             vllm_client.stop_vllm_server()
 

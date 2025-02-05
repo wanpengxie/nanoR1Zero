@@ -34,7 +34,7 @@ async def process_single_worker(
     from tqdm.asyncio import tqdm
     async with aiohttp.ClientSession() as session:
         all_results = []
-        total_batches = len(sub_dataset) // batch_size
+        total_batches = (len(sub_dataset) + batch_size - 1) // batch_size
         
         async for i in tqdm(
             range(0, len(sub_dataset), batch_size),
@@ -81,7 +81,7 @@ async def async_batch_generate(
     """
     # 计算每个worker应处理的数据量
     worker_count = len(worker_urls)
-    items_per_worker = len(dataset) // worker_count
+    items_per_worker = (len(dataset) + worker_count - 1) // worker_count
     
     # 划分数据集
     worker_datasets = [
