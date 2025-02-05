@@ -12,3 +12,5 @@ python script/main.py script/conf.json
 ```
 
 
+![eval mean rewards](./assets/eval_mean_reward.png)
+![eval response length](./assets/eval_response_length.png)
