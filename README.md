@@ -11,6 +11,9 @@
 python script/main.py script/conf.json
 ```
 
-
+## 测试集效果
+1. 测试集rewards稳定提升
 ![eval mean rewards](./assets/eval_mean_reward.png)
+
+2. 测试集序列长度持续变长
 ![eval response length](./assets/eval_response_length.png)
