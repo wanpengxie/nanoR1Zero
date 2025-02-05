@@ -89,7 +89,7 @@ if __name__ == "__main__":
     train_step = 0
 
 
-    vllm_client.start_vllm_server()
+    # vllm_client.start_vllm_server()
     for e in range(epoch):
         for i in range(0, len(train_dataset), batch_size):
             prompts = train_dataset[i:i+batch_size]
@@ -129,7 +129,11 @@ if __name__ == "__main__":
                 "sample_average_reward": average_reward,
                 "sample_average_length": average_length,
             })
-            train_step = grpo.train(collector.sample(inner_epoch, batch=micro_batch, mix=sample_mix), train_batch, train_step)
+            train_size = len(collector.episodes) * (sample_mix + 1)
+            train_step = grpo.train(collector.sample(inner_epoch, batch=micro_batch, mix=sample_mix), 
+                                    train_batch, 
+                                    train_step,
+                                    train_size)
             torch.cuda.empty_cache()
 
             policy_model.save_policy_model()

@@ -100,7 +100,7 @@ class GRPO(torch.nn.Module):
         self.policy_model.ref_model.cpu()
         return sample_episodes
     
-    def train(self, samples_iter, train_batch, train_step):
+    def train(self, samples_iter, train_batch, train_step, train_size):
         self.policy_model.train()
         accumulated_loss = 0
         train_samples = 0
@@ -108,7 +108,7 @@ class GRPO(torch.nn.Module):
         t = time.time()
         accumulated_policy_loss = 0
         accumulated_entropy_loss = 0
-        pbar = tqdm(samples_iter)        
+        pbar = tqdm(samples_iter, desc='train', total=train_size)        
         for samples in pbar:
             samples_num = samples[0].shape[0]
             micro_train_samples += samples_num
@@ -123,11 +123,10 @@ class GRPO(torch.nn.Module):
             accumulated_policy_loss += np.sqrt(policy_loss_acc * policy_loss_acc)
             accumulated_entropy_loss += np.sqrt(entropy_loss_acc * entropy_loss_acc)
             pbar.set_postfix({
-                'entropy_loss': f'{entropy_loss.detach().cpu().item():.4f}',
-                'policy_loss': f'{policy_loss.detach().cpu().item():.4f}',
-                'loss': f'{loss.detach().cpu().item():.4f}',
-                'train_step': train_step,
-                'train_samples': train_samples,
+                'entropy': f'{entropy_loss.detach().cpu().item():.4f}',
+                'policy': f'{policy_loss.detach().cpu().item():.4f}',
+                'step': train_step,
+                'samples': train_samples,
             })
             
             if micro_train_samples >= train_batch:

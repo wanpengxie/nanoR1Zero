@@ -27,6 +27,12 @@ class Collector(object):
         with open(path, 'wb') as f:
             pickle.dump({'history': self.history, 'current': self.episodes}, f)
 
+    def load_episodes(self, path):
+        with open(path, 'rb') as f:
+            data = pickle.load(f)
+            self.history = data['history']
+            self.episodes = data['current']
+
     def sample(self, epoch: int, batch=2, shuffle=True, mix=None):
         samples = self.episodes
         if mix is not None and len(self.history) > 0:
@@ -40,8 +46,7 @@ class Collector(object):
             if shuffle:
                 np.random.shuffle(samples)
             for j in range(len(samples)//batch):
-                samples = samples[j*batch:(j+1)*batch]
-                yield self.pack_samples(samples)
+                yield self.pack_samples(samples[j*batch:(j+1)*batch])
 
     def pack_samples(self, samples):
         max_len = max([len(sample[3]) for sample in samples])
