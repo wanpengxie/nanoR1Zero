@@ -8,5 +8,7 @@
 ## 训练
 
 ```bash
-python script/main.py
+python script/main.py script/conf.json
 ```
+
+
